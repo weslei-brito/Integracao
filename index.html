@@ -1109,12 +1109,12 @@
         
       // Processa cadastro
 async function handleRegister() {
-    const email = document.getElementById('register-email').value;
-    const password = document.getElementById('register-password').value;
-    const name = document.getElementById('register-name').value;
-    const phone = document.getElementById('register-phone').value;
-    const userDocument = document.getElementById('register-document').value; // Mudei para userDocument
-    const address = document.getElementById('register-address').value;
+    const email = document.getElementById('auth-email').value;
+    const password = document.getElementById('auth-password').value;
+    const name = document.getElementById('auth-name').value;
+    const phone = document.getElementById('auth-phone').value;
+    const userDocument = document.getElementById('auth-document').value; // Mudei para userDocument
+    const address = document.getElementById('auth-address').value;
     
     if (!email || !password || !name || !phone || !userDocument) {
         showNotification('Preencha todos os campos obrigatórios', 'error');
