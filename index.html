@@ -1050,59 +1050,58 @@
             }
         }
         
-        // Processa cadastro
-        async function handleRegister() {
-            const email = document.getElementById('auth-email').value;
-            const password = document.getElementById('auth-password').value;
-            const name = document.getElementById('auth-name').value;
-            const phone = document.getElementById('auth-phone').value;
-            const document = document.getElementById('auth-document').value;
-            const address = document.getElementById('auth-address').value;
-            
-            if (!email || !password || !name || !phone || !document) {
-                showNotification('Preencha todos os campos obrigatórios', 'error');
-                return;
-            }
-            
-            try {
-                // Em produção, use: const { data, error } = await supabase.auth.signUp({ email, password })
-                
-                // Simulação de cadastro bem-sucedido
-                currentUser = {
-                    id: Date.now(),
-                    email: email,
-                    name: name.split(' ')[0]
-                };
-                
-                userProfile = {
-                    id: Date.now() + 1,
-                    user_id: currentUser.id,
-                    role: currentRole,
-                    full_name: name,
-                    phone: phone,
-                    document: document,
-                    address: address,
-                    created_at: new Date().toISOString()
-                };
-                
-                // Salva no localStorage
-                localStorage.setItem('renteasy_user', JSON.stringify(currentUser));
-                localStorage.setItem('renteasy_profile', JSON.stringify(userProfile));
-                
-                // Em produção, salve o perfil no Supabase
-                // await supabase.from('profiles').insert([userProfile]);
-                
-                // Atualiza UI
-                updateUIAfterLogin();
-                authModal.classList.remove('active');
-                showNotification('Cadastro realizado com sucesso!', 'success');
-                
-            } catch (error) {
-                console.error('Erro no cadastro:', error);
-                showNotification('Erro ao cadastrar. Tente novamente.', 'error');
-            }
-        }
+       // Processa cadastro
+async function handleRegister() {
+    const email = document.getElementById('auth-email').value;
+    const password = document.getElementById('auth-password').value;
+    const name = document.getElementById('auth-name').value;
+    const phone = document.getElementById('auth-phone').value;
+    const documentNumber = document.getElementById('auth-document').value; // Renomeado para evitar conflito
+    const address = document.getElementById('auth-address').value;
+
+    if (!email || !password || !name || !phone || !documentNumber) {
+        showNotification('Preencha todos os campos obrigatórios', 'error');
+        return;
+    }
+
+    try {
+        // Em produção, use: const { data, error } = await supabase.auth.signUp({ email, password })
         
+        // Simulação de cadastro bem-sucedido
+        currentUser = {
+            id: Date.now(),
+            email: email,
+            name: name.split(' ')[0]
+        };
+
+        userProfile = {
+            id: Date.now() + 1,
+            user_id: currentUser.id,
+            role: currentRole,
+            full_name: name,
+            phone: phone,
+            document: documentNumber, // Aqui usamos o novo nome
+            address: address,
+            created_at: new Date().toISOString()
+        };
+
+        // Salva no localStorage
+        localStorage.setItem('renteasy_user', JSON.stringify(currentUser));
+        localStorage.setItem('renteasy_profile', JSON.stringify(userProfile));
+
+        // Em produção, salve o perfil no Supabase
+        // await supabase.from('profiles').insert([userProfile]);
+
+        // Atualiza UI
+        updateUIAfterLogin();
+        authModal.classList.remove('active');
+        showNotification('Cadastro realizado com sucesso!', 'success');
+
+    } catch (error) {
+        console.error('Erro no cadastro:', error);
+        showNotification('Erro ao cadastrar. Tente novamente.', 'error');
+    }
+}
         // Atualiza UI após login
         function updateUIAfterLogin() {
             // Esconde hero section e mostra main content
