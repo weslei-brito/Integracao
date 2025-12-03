@@ -1094,6 +1094,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         
        
         // Processa login
+// Processa login - VERSÃO CORRIGIDA
 async function handleLogin() {
     const email = document.getElementById('auth-email').value;
     const password = document.getElementById('auth-password').value;
@@ -1106,6 +1107,7 @@ async function handleLogin() {
     try {
         console.log('Tentando login com:', email);
         
+        // 1. Faz login no Supabase Auth
         const { data, error } = await supabase.auth.signInWithPassword({
             email,
             password
@@ -1120,67 +1122,100 @@ async function handleLogin() {
         console.log('Login bem-sucedido:', data);
         currentUser = data.user;
         
-        // Busca perfil do usuário - CORRIGIDO
-        const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('user_id', currentUser.id)  // Use user_id, não id
-            .single();
+        // 2. Busca perfil do usuário - VERIFICANDO A ESTRUTURA CORRETA
+        let profile = null;
         
-        if (profileError) {
-            console.error('Erro ao buscar perfil:', profileError);
+        // Tenta buscar com diferentes estruturas de campo
+        try {
+            // Primeiro tenta com 'user_id' (mais comum)
+            const { data: profileData, error: profileError } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('user_id', currentUser.id)
+                .single();
             
-            // Se não encontrar perfil, cria um
-            if (profileError.code === 'PGRST116') {
-                showNotification('Perfil não encontrado. Criando novo perfil...', 'info');
-                await createDefaultProfile();
-            } else {
-                showNotification('Erro ao carregar perfil: ' + profileError.message, 'error');
+            if (!profileError) {
+                profile = profileData;
+            }
+        } catch (e1) {
+            console.log('Tentativa 1 falhou:', e1);
+            
+            try {
+                // Tenta com 'id' igual ao user_id
+                const { data: profileData, error: profileError } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', currentUser.id)
+                    .single();
+                
+                if (!profileError) {
+                    profile = profileData;
+                }
+            } catch (e2) {
+                console.log('Tentativa 2 falhou:', e2);
+                
+                try {
+                    // Tenta com 'email' (última tentativa)
+                    const { data: profileData, error: profileError } = await supabase
+                        .from('profiles')
+                        .select('*')
+                        .eq('email', currentUser.email)
+                        .single();
+                    
+                    if (!profileError) {
+                        profile = profileData;
+                    }
+                } catch (e3) {
+                    console.log('Tentativa 3 falhou:', e3);
+                }
+            }
+        }
+        
+        // 3. Se não encontrou perfil, cria um
+        if (!profile) {
+            console.log('Perfil não encontrado, criando novo...');
+            
+            // Determina o role baseado no currentRole (definido antes do modal)
+            const role = currentRole || 'renter';
+            
+            const { data: newProfile, error: createError } = await supabase
+                .from('profiles')
+                .insert([
+                    {
+                        user_id: currentUser.id,
+                        email: currentUser.email,
+                        full_name: currentUser.user_metadata?.full_name || currentUser.email.split('@')[0],
+                        role: role,
+                        created_at: new Date().toISOString()
+                    }
+                ])
+                .select()
+                .single();
+            
+            if (createError) {
+                console.error('Erro ao criar perfil:', createError);
+                showNotification('Erro ao criar perfil. Tente novamente.', 'error');
                 return;
             }
+            
+            userProfile = newProfile;
+            currentRole = role;
+            showNotification('Perfil criado com sucesso!', 'success');
         } else {
             userProfile = profile;
             currentRole = userProfile.role;
         }
         
-        // Atualiza UI
+        // 4. Atualiza UI
         updateUIAfterLogin();
         authModal.classList.remove('active');
         showNotification('Login realizado com sucesso!', 'success');
         
     } catch (error) {
         console.error('Erro no login:', error);
-        showNotification('Erro ao fazer login. Verifique suas credenciais.', 'error');
+        showNotification('Erro ao fazer login. Tente novamente.', 'error');
     }
 }
- // Função auxiliar para criar perfil padrão
-async function createDefaultProfile() {
-    try {
-        const { data: profile, error } = await supabase
-            .from('profiles')
-            .insert([
-                {
-                    user_id: currentUser.id,
-                    role: 'renter',  // Default role
-                    full_name: currentUser.user_metadata?.full_name || 'Usuário',
-                    email: currentUser.email,
-                    created_at: new Date().toISOString()
-                }
-            ])
-            .select()
-            .single();
-        
-        if (error) throw error;
-        
-        userProfile = profile;
-        currentRole = userProfile.role;
-        showNotification('Perfil criado com sucesso!', 'success');
-        
-    } catch (error) {
-        console.error('Erro ao criar perfil padrão:', error);
-        throw error;
-    }
-}       
         // Processa cadastro
 async function handleRegister() {
     const email = document.getElementById('auth-email').value;
