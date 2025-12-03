@@ -985,12 +985,14 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
         
         // Mostra modal de autenticação
-        function showAuthModal(role) {
-            currentRole = role;
-            
-            // Por padrão mostra login
-            showLoginForm();
-        }
+        // Mostra modal de autenticação
+            function showAuthModal(role) {
+                console.log('Mostrando modal para role:', role);
+                currentRole = role;  // Define currentRole ANTES de mostrar o modal
+                
+                // Por padrão mostra login
+                showLoginForm();
+            }
         
         // Mostra formulário de login
         function showLoginForm() {
@@ -1090,7 +1092,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             authModal.classList.add('active');
         }
         
-        // Processa login
+       
         // Processa login
 async function handleLogin() {
     const email = document.getElementById('auth-email').value;
