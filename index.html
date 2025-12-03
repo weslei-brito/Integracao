@@ -1107,8 +1107,7 @@
             authModal.classList.add('active');
         }
         
-        // Processa login - VERSÃO CORRIGIDA
-       // Processa login - VERSÃO CORRIGIDA
+     // Processa login - VERSÃO CORRIGIDA
 async function handleLogin() {
     const email = document.getElementById('auth-email').value;
     const password = document.getElementById('auth-password').value;
@@ -1121,7 +1120,7 @@ async function handleLogin() {
     try {
         console.log('Tentando login com:', email);
         
-        // 1. Faz login no Supabase Auth (autenticação com email/senha)
+        // 1. Faz login no Supabase Auth
         const { data, error } = await supabase.auth.signInWithPassword({
             email,
             password
@@ -1132,9 +1131,7 @@ async function handleLogin() {
             
             // Mensagens de erro mais específicas
             if (error.message.includes('Invalid login credentials')) {
-                showNotification('Email ou senha incorretos. Verifique suas credenciais.', 'error');
-            } else if (error.message.includes('Email not confirmed')) {
-                showNotification('Confirme seu email antes de fazer login.', 'error');
+                showNotification('Email ou senha incorretos.', 'error');
             } else {
                 showNotification('Erro ao fazer login: ' + error.message, 'error');
             }
@@ -1144,97 +1141,73 @@ async function handleLogin() {
         console.log('Login bem-sucedido:', data);
         currentUser = data.user;
         
-        // 2. Busca perfil do usuário - múltiplas tentativas
-        let profile = null;
+        // 2. Busca perfil do usuário
+        const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('user_id', currentUser.id)
+            .single();
         
-        // Tentativa 1: Busca por user_id
-        try {
-            const { data: profileData, error: profileError } = await supabase
+        if (profileError) {
+            console.log('Perfil não encontrado, tentando por email:', profileError);
+            
+            // Tenta buscar por email
+            const { data: emailProfile, error: emailError } = await supabase
                 .from('profiles')
                 .select('*')
-                .eq('user_id', currentUser.id)
-                .maybeSingle();
+                .eq('email', currentUser.email)
+                .single();
             
-            if (!profileError && profileData) {
-                profile = profileData;
-            }
-        } catch (e1) {
-            console.log('Busca por user_id falhou:', e1);
-        }
-        
-        // Tentativa 2: Busca por email (fallback)
-        if (!profile) {
-            try {
-                const { data: profileData, error: profileError } = await supabase
-                    .from('profiles')
-                    .select('*')
-                    .eq('email', currentUser.email)
-                    .maybeSingle();
+            if (emailError) {
+                console.log('Perfil não encontrado por email, criando novo...');
                 
-                if (!profileError && profileData) {
-                    profile = profileData;
-                }
-            } catch (e2) {
-                console.log('Busca por email falhou:', e2);
-            }
-        }
-        
-        // Tentativa 3: Se não encontrou, tenta criar perfil
-        if (!profile) {
-            console.log('Perfil não encontrado, criando novo...');
-            
-            // Pega role do metadata do usuário ou usa default
-            const role = currentUser.user_metadata?.role || currentRole || 'renter';
-            
-            const { data: newProfile, error: createError } = await supabase
-                .from('profiles')
-                .insert([
-                    {
+                // Cria perfil se não existir
+                const role = currentUser.user_metadata?.role || currentRole || 'renter';
+                
+                const { data: newProfile, error: createError } = await supabase
+                    .from('profiles')
+                    .insert([
+                        {
+                            user_id: currentUser.id,
+                            email: currentUser.email,
+                            full_name: currentUser.user_metadata?.full_name || currentUser.email.split('@')[0],
+                            phone: currentUser.user_metadata?.phone || '',
+                            document: currentUser.user_metadata?.document || '',
+                            address: currentUser.user_metadata?.address || '',
+                            role: role,
+                            created_at: new Date().toISOString()
+                        }
+                    ])
+                    .select()
+                    .single();
+                
+                if (createError) {
+                    console.error('Erro ao criar perfil:', createError);
+                    // Usa perfil temporário
+                    userProfile = {
+                        id: currentUser.id,
                         user_id: currentUser.id,
                         email: currentUser.email,
                         full_name: currentUser.user_metadata?.full_name || currentUser.email.split('@')[0],
-                        phone: currentUser.user_metadata?.phone || '',
-                        document: currentUser.user_metadata?.document || '',
-                        address: currentUser.user_metadata?.address || '',
-                        role: role,
-                        created_at: new Date().toISOString()
-                    }
-                ])
-                .select()
-                .single();
-            
-            if (!createError && newProfile) {
-                profile = newProfile;
-                console.log('Perfil criado com sucesso:', profile);
+                        role: role
+                    };
+                } else {
+                    userProfile = newProfile;
+                }
             } else {
-                console.error('Erro ao criar perfil:', createError);
+                userProfile = emailProfile;
             }
+        } else {
+            userProfile = profileData;
         }
         
-        // 3. Se conseguiu obter/criar perfil, atualiza estado
-        if (profile) {
-            userProfile = profile;
-            currentRole = userProfile.role;
-            
-            // 4. Atualiza UI
-            updateUIAfterLogin();
-            authModal.classList.remove('active');
-            showNotification('Login realizado com sucesso!', 'success');
-        } else {
-            // Se não conseguiu perfil, ainda permite login com dados básicos
-            showNotification('Login realizado, mas perfil incompleto. Atualize seus dados.', 'warning');
-            
-            // Cria perfil local temporário
-            userProfile = {
-                id: currentUser.id,
-                email: currentUser.email,
-                full_name: currentUser.user_metadata?.full_name || currentUser.email.split('@')[0],
-                role: currentRole || 'renter'
-            };
-            
-            updateUIAfterLogin();
-            authModal.classList.remove('active');
-        }
+        // 3. Define role
+        currentRole = userProfile.role;
+        
+        // 4. Atualiza UI
+        updateUIAfterLogin();
+        authModal.classList.remove('active');
+        showNotification('Login realizado com sucesso!', 'success');
         
     } catch (error) {
         console.error('Erro no login:', error);
@@ -1242,8 +1215,7 @@ async function handleLogin() {
     }
 }
         
-        // Processa cadastro
-       // Processa cadastro - VERSÃO CORRIGIDA
+// Processa cadastro - VERSÃO MELHORADA
 async function handleRegister() {
     const email = document.getElementById('auth-email').value;
     const password = document.getElementById('auth-password').value;
@@ -1277,10 +1249,10 @@ async function handleRegister() {
     try {
         console.log('Tentando cadastro com role:', currentRole);
         
-        // 1. PRIMEIRO: Cria usuário no Supabase Auth (isso cria o usuário com senha)
+        // 1. Cria usuário no Supabase Auth
         const { data: authData, error: authError } = await supabase.auth.signUp({
-            email,
-            password,
+            email: email,
+            password: password,
             options: {
                 data: {
                     full_name: name,
@@ -1308,13 +1280,12 @@ async function handleRegister() {
         
         console.log('Cadastro auth bem-sucedido:', authData);
         
-        // 2. SEGUNDO: Cria perfil no banco de dados (apenas se o auth foi bem-sucedido)
-        // Aguarda um pouco para garantir que o usuário foi criado
+        // 2. Cria perfil no banco de dados profiles
         if (authData.user) {
-            console.log('Usuário criado, ID:', authData.user.id);
+            console.log('Criando perfil para usuário:', authData.user.id);
             
-            // Aguarda 1 segundo para garantir sincronização
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            // Aguarda um pouco para garantir sincronização
+            await new Promise(resolve => setTimeout(resolve, 500));
             
             const { data: profileData, error: profileError } = await supabase
                 .from('profiles')
@@ -1336,31 +1307,73 @@ async function handleRegister() {
             if (profileError) {
                 console.error('Erro ao criar perfil:', profileError);
                 
-                // Não impede o cadastro mesmo se o perfil falhar
-                showNotification('Conta criada, mas houve um problema ao criar o perfil completo. Faça login para continuar.', 'warning');
+                // Tenta criar novamente após um segundo
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                const { data: retryData, error: retryError } = await supabase
+                    .from('profiles')
+                    .insert([
+                        {
+                            user_id: authData.user.id,
+                            email: email,
+                            full_name: name,
+                            phone: phone,
+                            document: userDocument,
+                            address: address,
+                            role: currentRole,
+                            created_at: new Date().toISOString()
+                        }
+                    ])
+                    .select()
+                    .single();
+                
+                if (retryError) {
+                    console.error('Erro no retry do perfil:', retryError);
+                    showNotification('Conta criada, mas houve um problema ao criar o perfil. Tente fazer login.', 'warning');
+                } else {
+                    console.log('Perfil criado no retry:', retryData);
+                    showNotification('Cadastro realizado com sucesso!', 'success');
+                }
             } else {
-                console.log('Perfil criado:', profileData);
+                console.log('Perfil criado com sucesso:', profileData);
+                showNotification('Cadastro realizado com sucesso!', 'success');
             }
         }
         
-        // 3. Fecha modal e mostra mensagem
+        // 3. Fecha modal
         authModal.classList.remove('active');
         
-        // IMPORTANTE: O Supabase pode exigir confirmação de email
+        // Se o email não precisa ser confirmado, faz login automático
         if (authData.session) {
-            // Usuário logado automaticamente (se confirmar email automático estiver habilitado)
             currentUser = authData.user;
-            userProfile = authData.user.user_metadata;
             
-            showNotification('Cadastro realizado com sucesso! Redirecionando...', 'success');
+            // Tenta buscar o perfil recém-criado
+            const { data: fetchedProfile, error: fetchError } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('user_id', currentUser.id)
+                .single();
             
-            // Atualiza UI
-            setTimeout(() => {
-                updateUIAfterLogin();
-            }, 2000);
+            if (!fetchError && fetchedProfile) {
+                userProfile = fetchedProfile;
+                currentRole = userProfile.role;
+                console.log('Perfil encontrado após cadastro:', userProfile);
+                
+                showNotification('Cadastro realizado! Redirecionando...', 'success');
+                
+                // Atualiza UI
+                setTimeout(() => {
+                    updateUIAfterLogin();
+                }, 1500);
+            } else {
+                showNotification('Cadastro realizado! Por favor, faça login.', 'success');
+                setTimeout(() => {
+                    showLoginForm();
+                }, 2000);
+            }
         } else {
-            // Precisa confirmar email ou fazer login manualmente
-            showNotification('Cadastro realizado! Verifique seu email para confirmar a conta e faça login.', 'success');
+            // Precisa confirmar email
+            showNotification('Cadastro realizado! Verifique seu email para confirmar a conta.', 'success');
             
             // Mostra formulário de login após alguns segundos
             setTimeout(() => {
