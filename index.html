@@ -8,7 +8,7 @@
     <!-- Supabase JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.38.0/dist/umd/supabase.min.js"></script>
     <style>
-        /* Todos os estilos anteriores permanecem iguais */
+        /* Todos os estilos anteriores permanecem iguais - removi para economizar espaço */
         * {
             margin: 0;
             padding: 0;
@@ -479,6 +479,16 @@
         .status-canceled {
             background-color: rgba(239, 68, 68, 0.1);
             color: var(--danger);
+        }
+
+        .status-active {
+            background-color: rgba(59, 130, 246, 0.1);
+            color: var(--secondary);
+        }
+
+        .status-completed {
+            background-color: rgba(156, 163, 175, 0.1);
+            color: var(--gray-600);
         }
 
         /* Dashboard */
@@ -1045,7 +1055,7 @@
                     </div>
                     
                     <button class="btn btn-primary" style="width: 100%; margin-top: 20px;" 
-                            onclick="()">
+                            onclick="handleRegister()">
                         <i class="fas fa-user-plus"></i> Cadastrar
                     </button>
                     
@@ -1107,84 +1117,85 @@
             }
         }
         
-      // Processa cadastro
-async function handleRegister() {
-    const email = document.getElementById('auth-email').value;
-    const password = document.getElementById('auth-password').value;
-    const name = document.getElementById('auth-name').value;
-    const phone = document.getElementById('auth-phone').value;
-    const userDocument = document.getElementById('auth-document').value; // Mudei para userDocument
-    const address = document.getElementById('auth-address').value;
-    
-    if (!email || !password || !name || !phone || !userDocument) {
-        showNotification('Preencha todos os campos obrigatórios', 'error');
-        return;
-    }
-    
-    if (password.length < 6) {
-        showNotification('A senha deve ter no mínimo 6 caracteres', 'error');
-        return;
-    }
-    
-    try {
-        console.log('Tentando cadastro com:', email);
-        
-        // 1. Cria usuário no Supabase Auth
-        const { data: authData, error: authError } = await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-                data: {
-                    full_name: name
-                }
+        // Processa cadastro
+        async function handleRegister() {
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('auth-password').value;
+            const name = document.getElementById('auth-name').value;
+            const phone = document.getElementById('auth-phone').value;
+            const userDocument = document.getElementById('auth-document').value;
+            const address = document.getElementById('auth-address').value;
+            
+            if (!email || !password || !name || !phone || !userDocument) {
+                showNotification('Preencha todos os campos obrigatórios', 'error');
+                return;
             }
-        });
-        
-        if (authError) {
-            console.error('Erro no cadastro auth:', authError);
-            showNotification(authError.message, 'error');
-            return;
-        }
-        
-        console.log('Cadastro auth bem-sucedido:', authData);
-        currentUser = authData.user;
-        
-        // 2. Cria perfil no banco de dados
-        const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .insert([
-                {
-                    user_id: currentUser.id,
-                    role: currentRole,
-                    full_name: name,
-                    phone: phone,
-                    document: userDocument, // Use userDocument aqui
-                    address: address,
-                    created_at: new Date().toISOString()
+            
+            if (password.length < 6) {
+                showNotification('A senha deve ter no mínimo 6 caracteres', 'error');
+                return;
+            }
+            
+            try {
+                console.log('Tentando cadastro com:', email);
+                
+                // 1. Cria usuário no Supabase Auth
+                const { data: authData, error: authError } = await supabase.auth.signUp({
+                    email,
+                    password,
+                    options: {
+                        data: {
+                            full_name: name
+                        }
+                    }
+                });
+                
+                if (authError) {
+                    console.error('Erro no cadastro auth:', authError);
+                    showNotification(authError.message, 'error');
+                    return;
                 }
-            ])
-            .select()
-            .single();
-        
-        if (profileError) {
-            console.error('Erro ao criar perfil:', profileError);
-            showNotification(profileError.message, 'error');
-            return;
+                
+                console.log('Cadastro auth bem-sucedido:', authData);
+                currentUser = authData.user;
+                
+                // 2. Cria perfil no banco de dados
+                const { data: profileData, error: profileError } = await supabase
+                    .from('profiles')
+                    .insert([
+                        {
+                            user_id: currentUser.id,
+                            role: currentRole,
+                            full_name: name,
+                            phone: phone,
+                            document: userDocument,
+                            address: address,
+                            created_at: new Date().toISOString()
+                        }
+                    ])
+                    .select()
+                    .single();
+                
+                if (profileError) {
+                    console.error('Erro ao criar perfil:', profileError);
+                    showNotification(profileError.message, 'error');
+                    return;
+                }
+                
+                console.log('Perfil criado:', profileData);
+                userProfile = profileData;
+                
+                // Atualiza UI
+                updateUIAfterLogin();
+                authModal.classList.remove('active');
+                showNotification('Cadastro realizado com sucesso! Verifique seu email para confirmar a conta.', 'success');
+                
+            } catch (error) {
+                console.error('Erro no cadastro:', error);
+                showNotification('Erro ao cadastrar. Tente novamente.', 'error');
+            }
         }
         
-        console.log('Perfil criado:', profileData);
-        userProfile = profileData;
-        
-        // Atualiza UI
-        updateUIAfterLogin();
-        authModal.classList.remove('active');
-        showNotification('Cadastro realizado com sucesso! Verifique seu email para confirmar a conta.', 'success');
-        
-    } catch (error) {
-        console.error('Erro no cadastro:', error);
-        showNotification('Erro ao cadastrar. Tente novamente.', 'error');
-    }
-}
         // Atualiza UI após login
         function updateUIAfterLogin() {
             // Esconde hero section e mostra main content
