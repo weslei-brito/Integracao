@@ -1215,7 +1215,7 @@ async function handleLogin() {
     }
 }
         
-// Processa cadastro - VERSÃO MELHORADA
+// Processa cadastro - VERSÃO SEM VERIFICAÇÃO DE EMAIL
 async function handleRegister() {
     const email = document.getElementById('auth-email').value;
     const password = document.getElementById('auth-password').value;
@@ -1225,7 +1225,6 @@ async function handleRegister() {
     const address = document.getElementById('auth-address').value;
     const termsAccepted = document.getElementById('auth-terms')?.checked;
     
-    // Verifica se currentRole está definido
     if (!currentRole) {
         showNotification('Selecione uma função (Locatário ou Locador) primeiro', 'error');
         return;
@@ -1249,7 +1248,8 @@ async function handleRegister() {
     try {
         console.log('Tentando cadastro com role:', currentRole);
         
-        // 1. Cria usuário no Supabase Auth
+        // DESATIVAR CONFIRMAÇÃO DE EMAIL NO SUPABASE PRIMEIRO
+        // Use esta configuração no signUp
         const { data: authData, error: authError } = await supabase.auth.signUp({
             email: email,
             password: password,
@@ -1260,15 +1260,16 @@ async function handleRegister() {
                     document: userDocument,
                     address: address,
                     role: currentRole
-                }
+                },
+                // Esta opção pode ajudar
+                emailRedirectTo: window.location.origin
             }
         });
         
         if (authError) {
             console.error('Erro no cadastro auth:', authError);
             
-            // Verifica se é erro de usuário já existente
-            if (authError.message.includes('already registered') || authError.code === 'user_already_exists') {
+            if (authError.message.includes('already registered')) {
                 showNotification('Este email já está cadastrado. Faça login.', 'error');
                 showLoginForm();
                 return;
@@ -1280,110 +1281,108 @@ async function handleRegister() {
         
         console.log('Cadastro auth bem-sucedido:', authData);
         
-        // 2. Cria perfil no banco de dados profiles
-        if (authData.user) {
-            console.log('Criando perfil para usuário:', authData.user.id);
-            
-            // Aguarda um pouco para garantir sincronização
-            await new Promise(resolve => setTimeout(resolve, 500));
-            
-            const { data: profileData, error: profileError } = await supabase
-                .from('profiles')
-                .insert([
-                    {
-                        user_id: authData.user.id,
-                        email: email,
-                        full_name: name,
-                        phone: phone,
-                        document: userDocument,
-                        address: address,
-                        role: currentRole,
-                        created_at: new Date().toISOString()
-                    }
-                ])
-                .select()
-                .single();
-            
-            if (profileError) {
-                console.error('Erro ao criar perfil:', profileError);
-                
-                // Tenta criar novamente após um segundo
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                
-                const { data: retryData, error: retryError } = await supabase
-                    .from('profiles')
-                    .insert([
-                        {
-                            user_id: authData.user.id,
-                            email: email,
-                            full_name: name,
-                            phone: phone,
-                            document: userDocument,
-                            address: address,
-                            role: currentRole,
-                            created_at: new Date().toISOString()
-                        }
-                    ])
-                    .select()
-                    .single();
-                
-                if (retryError) {
-                    console.error('Erro no retry do perfil:', retryError);
-                    showNotification('Conta criada, mas houve um problema ao criar o perfil. Tente fazer login.', 'warning');
-                } else {
-                    console.log('Perfil criado no retry:', retryData);
-                    showNotification('Cadastro realizado com sucesso!', 'success');
-                }
-            } else {
-                console.log('Perfil criado com sucesso:', profileData);
-                showNotification('Cadastro realizado com sucesso!', 'success');
-            }
-        }
-        
-        // 3. Fecha modal
-        authModal.classList.remove('active');
-        
-        // Se o email não precisa ser confirmado, faz login automático
+        // IMPORTANTE: Se o Supabase estiver configurado para não exigir verificação
+        // o usuário será automaticamente logado
         if (authData.session) {
             currentUser = authData.user;
+            console.log('Usuário logado automaticamente após cadastro');
             
-            // Tenta buscar o perfil recém-criado
-            const { data: fetchedProfile, error: fetchError } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('user_id', currentUser.id)
-                .single();
+            // Cria perfil imediatamente
+            const { data: profileData, error: profileError } = await createUserProfile(
+                currentUser.id, 
+                email, 
+                name, 
+                phone, 
+                userDocument, 
+                address, 
+                currentRole
+            );
             
-            if (!fetchError && fetchedProfile) {
-                userProfile = fetchedProfile;
+            if (!profileError && profileData) {
+                userProfile = profileData;
                 currentRole = userProfile.role;
-                console.log('Perfil encontrado após cadastro:', userProfile);
                 
-                showNotification('Cadastro realizado! Redirecionando...', 'success');
+                showNotification('Cadastro realizado com sucesso!', 'success');
+                authModal.classList.remove('active');
                 
                 // Atualiza UI
                 setTimeout(() => {
                     updateUIAfterLogin();
-                }, 1500);
+                }, 1000);
             } else {
-                showNotification('Cadastro realizado! Por favor, faça login.', 'success');
-                setTimeout(() => {
-                    showLoginForm();
-                }, 2000);
+                // Perfil não criado, mas usuário logado
+                showNotification('Cadastro realizado! Por favor, complete seu perfil.', 'warning');
+                authModal.classList.remove('active');
+                updateUIAfterLogin();
             }
         } else {
-            // Precisa confirmar email
-            showNotification('Cadastro realizado! Verifique seu email para confirmar a conta.', 'success');
+            // Se não tiver sessão, pode ser que precise confirmar email
+            console.log('Nenhuma sessão após cadastro, pode precisar confirmar email');
             
-            // Mostra formulário de login após alguns segundos
-            setTimeout(() => {
-                showLoginForm();
-            }, 3000);
+            // Tenta fazer login imediatamente (para casos sem confirmação)
+            const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+                email: email,
+                password: password
+            });
+            
+            if (loginError) {
+                showNotification('Cadastro realizado! Verifique seu email para confirmar.', 'success');
+            } else {
+                // Login bem-sucedido sem confirmação
+                currentUser = loginData.user;
+                
+                // Cria perfil
+                const { data: profileData, error: profileError } = await createUserProfile(
+                    currentUser.id, 
+                    email, 
+                    name, 
+                    phone, 
+                    userDocument, 
+                    address, 
+                    currentRole
+                );
+                
+                if (!profileError && profileData) {
+                    userProfile = profileData;
+                    currentRole = userProfile.role;
+                    
+                    showNotification('Cadastro e login realizados com sucesso!', 'success');
+                    authModal.classList.remove('active');
+                    updateUIAfterLogin();
+                }
+            }
         }
         
     } catch (error) {
         console.error('Erro no cadastro:', error);
-        showNotification('Erro ao cadastrar: ' + error.message, 'error');
+        showNotification('Erro ao cadastrar. Tente novamente.', 'error');
+    }
+}
+
+// Função auxiliar para criar perfil
+async function createUserProfile(userId, email, name, phone, document, address, role) {
+    try {
+        const { data, error } = await supabase
+            .from('profiles')
+            .insert([
+                {
+                    user_id: userId,
+                    email: email,
+                    full_name: name,
+                    phone: phone,
+                    document: document,
+                    address: address,
+                    role: role,
+                    created_at: new Date().toISOString()
+                }
+            ])
+            .select()
+            .single();
+        
+        return { data, error };
+    } catch (error) {
+        console.error('Erro ao criar perfil:', error);
+        return { data: null, error };
     }
 }
         
