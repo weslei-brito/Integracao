@@ -1893,12 +1893,30 @@
                 });
             });
         }
-        function generateUUID() {
+        // Adicione esta função para gerar UUID válidos
+function generateUUID() {
+    // Versão melhorada que sempre gera UUID válido
+    let d = new Date().getTime();
+    if (typeof performance !== 'undefined' && typeof performance.now === 'function') {
+        d += performance.now();
+    }
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-        const r = Math.random() * 16 | 0;
-        const v = c === 'x' ? r : (r & 0x3 | 0x8);
-        return v.toString(16);
+        const r = (d + Math.random() * 16) % 16 | 0;
+        d = Math.floor(d / 16);
+        return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
     });
+}
+
+// Função auxiliar para validar email
+function validateEmail(email) {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
+}
+
+// Função auxiliar para validar telefone
+function validatePhone(phone) {
+    const re = /^(\d{10,11})$/;
+    return re.test(phone.replace(/\D/g, ''));
 }
         function setupRatingStars() {
             const stars = document.querySelectorAll('#review-stars i');
@@ -2005,13 +2023,29 @@
     e.preventDefault();
     
     try {
-        const email = document.getElementById('auth-email').value;
+        const email = document.getElementById('auth-email').value.trim();
         const password = document.getElementById('auth-password').value;
+        
+        // Validações básicas
+        if (!email || !password) {
+            alert('Por favor, preencha e-mail e senha.');
+            return;
+        }
+        
+        if (!validateEmail(email)) {
+            alert('Por favor, insira um e-mail válido.');
+            return;
+        }
+        
+        if (password.length < 6) {
+            alert('A senha deve ter pelo menos 6 caracteres.');
+            return;
+        }
         
         if (isRegistering) {
             // Register new user
-            const fullName = document.getElementById('register-name').value;
-            const phone = document.getElementById('register-phone').value;
+            const fullName = document.getElementById('register-name').value.trim();
+            const phone = document.getElementById('register-phone').value.trim();
             const userType = document.querySelector('input[name="register-user-type"]:checked').value;
             
             if (!fullName || !phone) {
@@ -2019,46 +2053,89 @@
                 return;
             }
             
+            if (!validatePhone(phone)) {
+                alert('Por favor, insira um telefone válido (10 ou 11 dígitos).');
+                return;
+            }
+            
             // Gerar um UUID válido
             const userId = generateUUID();
+            console.log('Gerando userId:', userId);
             
-            // Salvar usuário no Supabase
+            // Primeiro, verificar se o email já existe
+            const { data: existingUser, error: checkError } = await supabase
+                .from('profiles2')
+                .select('email')
+                .eq('email', email)
+                .maybeSingle();
+            
+            if (checkError && checkError.code !== 'PGRST116') {
+                console.error('Erro ao verificar email:', checkError);
+                alert('Erro ao verificar disponibilidade do e-mail.');
+                return;
+            }
+            
+            if (existingUser) {
+                alert('Este e-mail já está cadastrado. Faça login ou use outro e-mail.');
+                toggleAuthMode();
+                return;
+            }
+            
+            // Inserir novo usuário
+            const userData = {
+                id: userId,
+                full_name: fullName,
+                email: email,
+                phone: phone,
+                password_hash: btoa(password), // Para demonstração apenas
+                user_type: userType,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            };
+            
+            console.log('Tentando inserir:', userData);
+            
             const { data, error } = await supabase
                 .from('profiles2')
-                .insert({
-                    //id: userId,
-                    full_name: fullName,
-                    email: email,
-                    phone: phone,
-                    password_hash: btoa(password), // SIMPLES - apenas para demonstração
-                    user_type: userType,
-                    created_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString()
-                })
+                .insert([userData]) // Enviar como array
                 .select()
                 .single();
             
             if (error) {
-                console.error('Erro ao cadastrar:', error);
+                console.error('Erro detalhado ao cadastrar:', error);
                 
-                // Se o usuário já existe, tentar login
-                if (error.code === '23505') {
-                    alert('E-mail já cadastrado. Faça login.');
-                    toggleAuthMode();
+                // Se for erro de constraint, pode ser problema com o UUID
+                if (error.code === '23502') { // not_null_violation
+                    // Tentar novamente com novo UUID
+                    const newUserId = generateUUID();
+                    userData.id = newUserId;
+                    
+                    const { data: retryData, error: retryError } = await supabase
+                        .from('profiles2')
+                        .insert([userData])
+                        .select()
+                        .single();
+                    
+                    if (retryError) {
+                        alert('Erro ao cadastrar: ' + retryError.message);
+                        return;
+                    }
+                    
+                    data = retryData;
+                } else {
+                    alert('Erro ao cadastrar: ' + error.message);
                     return;
                 }
-                
-                // Outro erro, mostrar mensagem
-                alert('Erro ao cadastrar: ' + error.message);
-                return;
             }
             
             // Criar objeto de usuário
             const user = {
-                id: userId,
-                email: email,
-                full_name: fullName
+                id: data.id,
+                email: data.email,
+                full_name: data.full_name
             };
+            
+            console.log('Usuário criado:', user);
             
             // Salvar no localStorage
             localStorage.setItem('carRentalUser', JSON.stringify(user));
@@ -2067,20 +2144,24 @@
             currentUser = user;
             userProfile = data;
             
+            // Enviar e-mail de boas-vindas (simulado)
+            console.log(`Email enviado para ${email}: Bem-vindo ao CarRental Pro!`);
+            
             alert('Cadastro realizado com sucesso!');
             document.getElementById('auth-modal').style.display = 'none';
+            document.getElementById('auth-form').reset();
             checkAuth();
             
         } else {
-            // Login existing user - Correção importante!
+            // Login existing user
             const { data, error } = await supabase
                 .from('profiles2')
                 .select('*')
                 .eq('email', email)
-                .maybeSingle(); // Use maybeSingle em vez de single para evitar erro se não encontrar
+                .maybeSingle(); // Use maybeSingle em vez de single
             
             if (error) {
-                console.error('Erro ao fazer login:', error);
+                console.error('Erro ao buscar usuário:', error);
                 alert('Erro ao fazer login: ' + error.message);
                 return;
             }
@@ -2113,11 +2194,12 @@
             
             alert('Login realizado com sucesso!');
             document.getElementById('auth-modal').style.display = 'none';
+            document.getElementById('auth-form').reset();
             checkAuth();
         }
     } catch (error) {
         console.error('Error in auth:', error);
-        alert('Erro: ' + (error.message || 'Ocorreu um erro inesperado'));
+        alert('Erro inesperado: ' + (error.message || 'Tente novamente'));
     }
 }
         
