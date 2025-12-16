@@ -2561,40 +2561,79 @@
         }
         
         async function handleAuth(e) {
-            e.preventDefault();
+    e.preventDefault();
+    
+    try {
+        const email = document.getElementById('auth-email').value;
+        const password = document.getElementById('auth-password').value;
+        
+        if (isRegistering) {
+            // Register new user
+            const fullName = document.getElementById('register-name').value;
+            const userType = document.querySelector('input[name="register-user-type"]:checked').value;
             
-            try {
-                const email = document.getElementById('auth-email').value;
-                const password = document.getElementById('auth-password').value;
-                
-                if (isRegistering) {
-                    // Register new user
-                    const fullName = document.getElementById('register-name').value;
-                    const userType = document.querySelector('input[name="register-user-type"]:checked').value;
-                    
-                    if (!fullName) {
-                        alert('Por favor, digite seu nome completo.');
-                        return;
+            if (!fullName) {
+                alert('Por favor, digite seu nome completo.');
+                return;
+            }
+            
+            // 1. Fazer o cadastro
+            const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+                email: email,
+                password: password,
+                options: {
+                    data: {
+                        full_name: fullName,
+                        user_type: userType
                     }
-                    
-                    const { data, error } = await supabase.auth.signUp({
+                }
+            });
+            
+            if (signUpError) throw signUpError;
+            
+            // 2. VERIFICAÇÃO IMPORTANTE: Se a confirmação por e-mail está ativada
+            // No Supabase, por padrão o email confirmation é true
+            // Podemos precisar desativar temporariamente ou usar autenticação imediata
+            
+            // 3. Tentar fazer login automaticamente após o cadastro
+            // Isso criará a sessão imediatamente
+            const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+                email: email,
+                password: password
+            });
+            
+            if (loginError) {
+                console.warn('Não foi possível fazer login automático:', loginError.message);
+                // Se não conseguir logar automaticamente, apenas mostrar mensagem de sucesso
+                alert('Cadastro realizado com sucesso! Verifique seu e-mail para confirmar a conta antes de fazer login.');
+                authModal.style.display = 'none';
+                return;
+            }
+            
+            // 4. Agora temos uma sessão ativa, podemos criar o perfil
+            try {
+                const { error: profileError } = await supabase
+                    .from('profiles2')
+                    .insert({
+                        id: signUpData.user.id,
+                        full_name: fullName,
                         email: email,
-                        password: password,
-                        options: {
-                            data: {
-                                full_name: fullName,
-                                user_type: userType
-                            }
-                        }
+                        user_type: userType,
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
                     });
+                
+                if (profileError) {
+                    // Se der erro 401, tentar um método alternativo
+                    console.warn('Erro ao criar perfil (pode ser RLS):', profileError);
                     
-                    if (error) throw error;
+                    // Tentar novamente com delay para garantir que a sessão está ativa
+                    await new Promise(resolve => setTimeout(resolve, 1000));
                     
-                    // Create user profile
-                    await supabase
+                    const { error: retryError } = await supabase
                         .from('profiles2')
                         .insert({
-                            id: data.user.id,
+                            id: signUpData.user.id,
                             full_name: fullName,
                             email: email,
                             user_type: userType,
@@ -2602,41 +2641,54 @@
                             updated_at: new Date().toISOString()
                         });
                     
-                    // Send welcome email
-                    await sendEmailNotification(
-                        email,
-                        'Bem-vindo ao CarRental Pro!',
-                        `Olá ${fullName},<br><br>Seu cadastro foi realizado com sucesso!<br><br>Complete seu perfil para começar a alugar ou disponibilizar carros.<br><br>Atenciosamente,<br>Equipe CarRental Pro`
-                    );
-                    
-                    // Create welcome notification
-                    await createNotification(
-                        data.user.id,
-                        'Bem-vindo ao CarRental Pro!',
-                        'Complete seu perfil para começar a usar a plataforma.',
-                        'success'
-                    );
-                    
-                    alert('Cadastro realizado com sucesso! Verifique seu e-mail para confirmar a conta.');
-                    authModal.style.display = 'none';
-                    checkAuth();
-                    
-                } else {
-                    // Login existing user
-                    const { error } = await supabase.auth.signInWithPassword({
-                        email: email,
-                        password: password
-                    });
-                    
-                    if (error) throw error;
-                    
-                    authModal.style.display = 'none';
-                    checkAuth();
+                    if (retryError) {
+                        console.error('Falha ao criar perfil após retry:', retryError);
+                        // Continuar mesmo sem criar perfil - o trigger ou processo em background pode criar
+                    }
                 }
-            } catch (error) {
-                alert('Erro: ' + error.message);
+                
+                // 5. Enviar e-mails e notificações (apenas se o login foi bem-sucedido)
+                await sendEmailNotification(
+                    email,
+                    'Bem-vindo ao CarRental Pro!',
+                    `Olá ${fullName},<br><br>Seu cadastro foi realizado com sucesso!<br><br>Complete seu perfil para começar a alugar ou disponibilizar carros.<br><br>Atenciosamente,<br>Equipe CarRental Pro`
+                );
+                
+                await createNotification(
+                    signUpData.user.id,
+                    'Bem-vindo ao CarRental Pro!',
+                    'Complete seu perfil para começar a usar a plataforma.',
+                    'success'
+                );
+                
+                alert('Cadastro realizado com sucesso! Você já está logado.');
+                authModal.style.display = 'none';
+                checkAuth(); // Isso atualizará a UI com o usuário logado
+                
+            } catch (profileCreationError) {
+                console.error('Erro no processo de criação de perfil:', profileCreationError);
+                // Mesmo com erro no perfil, o usuário pode continuar
+                alert('Cadastro realizado! O login foi feito, mas houve um problema ao criar o perfil completo. Você pode completá-lo depois.');
+                authModal.style.display = 'none';
+                checkAuth();
             }
+            
+        } else {
+            // Login existing user
+            const { error } = await supabase.auth.signInWithPassword({
+                email: email,
+                password: password
+            });
+            
+            if (error) throw error;
+            
+            authModal.style.display = 'none';
+            checkAuth();
         }
+    } catch (error) {
+        alert('Erro: ' + error.message);
+    }
+}
         
         function toggleAuthMode() {
             isRegistering = !isRegistering;
