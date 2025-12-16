@@ -1893,7 +1893,13 @@
                 });
             });
         }
-        
+        function generateUUID() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+}
         function setupRatingStars() {
             const stars = document.querySelectorAll('#review-stars i');
             stars.forEach(star => {
@@ -1996,120 +2002,124 @@
         }
         
         async function handleAuth(e) {
-            e.preventDefault();
+    e.preventDefault();
+    
+    try {
+        const email = document.getElementById('auth-email').value;
+        const password = document.getElementById('auth-password').value;
+        
+        if (isRegistering) {
+            // Register new user
+            const fullName = document.getElementById('register-name').value;
+            const phone = document.getElementById('register-phone').value;
+            const userType = document.querySelector('input[name="register-user-type"]:checked').value;
             
-            try {
-                const email = document.getElementById('auth-email').value;
-                const password = document.getElementById('auth-password').value;
-                
-                if (isRegistering) {
-                    // Register new user
-                    const fullName = document.getElementById('register-name').value;
-                    const phone = document.getElementById('register-phone').value;
-                    const userType = document.querySelector('input[name="register-user-type"]:checked').value;
-                    
-                    if (!fullName || !phone) {
-                        alert('Por favor, preencha todos os campos obrigatórios.');
-                        return;
-                    }
-                    
-                    // Criar um ID único para o usuário
-                    const userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-                    
-                    // Salvar usuário no Supabase
-                    const { data, error } = await supabase
-                        .from('profiles2')
-                        .insert({
-                            id: userId,
-                            full_name: fullName,
-                            email: email,
-                            phone: phone,
-                            password_hash: btoa(password), // SIMPLES - apenas para demonstração
-                            user_type: userType,
-                            created_at: new Date().toISOString(),
-                            updated_at: new Date().toISOString()
-                        })
-                        .select()
-                        .single();
-                    
-                    if (error) {
-                        // Se o usuário já existe, tentar login
-                        if (error.code === '23505') {
-                            alert('E-mail já cadastrado. Faça login.');
-                            toggleAuthMode();
-                            return;
-                        }
-                        throw error;
-                    }
-                    
-                    // Criar objeto de usuário
-                    const user = {
-                        id: userId,
-                        email: email,
-                        full_name: fullName
-                    };
-                    
-                    // Salvar no localStorage
-                    localStorage.setItem('carRentalUser', JSON.stringify(user));
-                    
-                    // Atualizar estado
-                    currentUser = user;
-                    userProfile = data;
-                    
-                    // Enviar e-mail de boas-vindas (simulado)
-                    console.log(`Email enviado para ${email}: Bem-vindo ao CarRental Pro!`);
-                    
-                    alert('Cadastro realizado com sucesso!');
-                    document.getElementById('auth-modal').style.display = 'none';
-                    checkAuth();
-                    
-                } else {
-                    // Login existing user
-                    const { data, error } = await supabase
-                        .from('profiles2')
-                        .select('*')
-                        .eq('email', email)
-                        .single();
-                    
-                    if (error) {
-                        if (error.code === 'PGRST116') {
-                            alert('Usuário não encontrado. Cadastre-se primeiro.');
-                            toggleAuthMode();
-                        } else {
-                            throw error;
-                        }
-                        return;
-                    }
-                    
-                    // Verificar senha (simples - apenas para demonstração)
-                    if (btoa(password) !== data.password_hash) {
-                        alert('Senha incorreta.');
-                        return;
-                    }
-                    
-                    // Criar objeto de usuário
-                    const user = {
-                        id: data.id,
-                        email: data.email,
-                        full_name: data.full_name
-                    };
-                    
-                    // Salvar no localStorage
-                    localStorage.setItem('carRentalUser', JSON.stringify(user));
-                    
-                    // Atualizar estado
-                    currentUser = user;
-                    userProfile = data;
-                    
-                    alert('Login realizado com sucesso!');
-                    document.getElementById('auth-modal').style.display = 'none';
-                    checkAuth();
-                }
-            } catch (error) {
-                console.error('Error in auth:', error);
-                alert('Erro: ' + (error.message || 'Ocorreu um erro inesperado'));
+            if (!fullName || !phone) {
+                alert('Por favor, preencha todos os campos obrigatórios.');
+                return;
             }
+            
+            // Gerar um UUID válido
+            const userId = generateUUID();
+            
+            // Salvar usuário no Supabase
+            const { data, error } = await supabase
+                .from('profiles2')
+                .insert({
+                    id: userId,
+                    full_name: fullName,
+                    email: email,
+                    phone: phone,
+                    password_hash: btoa(password), // SIMPLES - apenas para demonstração
+                    user_type: userType,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                })
+                .select()
+                .single();
+            
+            if (error) {
+                console.error('Erro ao cadastrar:', error);
+                
+                // Se o usuário já existe, tentar login
+                if (error.code === '23505') {
+                    alert('E-mail já cadastrado. Faça login.');
+                    toggleAuthMode();
+                    return;
+                }
+                
+                // Outro erro, mostrar mensagem
+                alert('Erro ao cadastrar: ' + error.message);
+                return;
+            }
+            
+            // Criar objeto de usuário
+            const user = {
+                id: userId,
+                email: email,
+                full_name: fullName
+            };
+            
+            // Salvar no localStorage
+            localStorage.setItem('carRentalUser', JSON.stringify(user));
+            
+            // Atualizar estado
+            currentUser = user;
+            userProfile = data;
+            
+            alert('Cadastro realizado com sucesso!');
+            document.getElementById('auth-modal').style.display = 'none';
+            checkAuth();
+            
+        } else {
+            // Login existing user - Correção importante!
+            const { data, error } = await supabase
+                .from('profiles2')
+                .select('*')
+                .eq('email', email)
+                .maybeSingle(); // Use maybeSingle em vez de single para evitar erro se não encontrar
+            
+            if (error) {
+                console.error('Erro ao fazer login:', error);
+                alert('Erro ao fazer login: ' + error.message);
+                return;
+            }
+            
+            if (!data) {
+                alert('Usuário não encontrado. Cadastre-se primeiro.');
+                toggleAuthMode();
+                return;
+            }
+            
+            // Verificar senha (simples - apenas para demonstração)
+            if (btoa(password) !== data.password_hash) {
+                alert('Senha incorreta.');
+                return;
+            }
+            
+            // Criar objeto de usuário
+            const user = {
+                id: data.id,
+                email: data.email,
+                full_name: data.full_name
+            };
+            
+            // Salvar no localStorage
+            localStorage.setItem('carRentalUser', JSON.stringify(user));
+            
+            // Atualizar estado
+            currentUser = user;
+            userProfile = data;
+            
+            alert('Login realizado com sucesso!');
+            document.getElementById('auth-modal').style.display = 'none';
+            checkAuth();
         }
+    } catch (error) {
+        console.error('Error in auth:', error);
+        alert('Erro: ' + (error.message || 'Ocorreu um erro inesperado'));
+    }
+}
         
         function toggleAuthMode() {
             isRegistering = !isRegistering;
