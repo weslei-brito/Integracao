@@ -3,15 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CarRental Pro - Aluguel de Carros</title>
+    <title>CarRental Pro - Aluguel de Carros por Longo Prazo</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
-<script>
-    // Inicializar EmailJS com seu User ID
-    emailjs.init('service_5ybdjvn');
-</script>
     <style>
         * {
             margin: 0;
@@ -862,7 +856,6 @@
             justify-content: center;
             font-size: 18px;
             color: white;
-            flex-shrink: 0;
         }
 
         .notification-icon.info {
@@ -928,6 +921,21 @@
             background: linear-gradient(90deg, var(--primary), var(--secondary));
             border-radius: 4px;
             transition: width 0.5s ease;
+        }
+
+        /* Loading Spinner */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
 
         /* Responsive */
@@ -1017,11 +1025,12 @@
                     <a href="#" id="home-link" class="active">Início</a>
                     <a href="#" id="cars-link">Carros</a>
                     <a href="#" id="dashboard-link">Painel</a>
-                    <div class="user-info" id="user-info">
+                    <div class="user-info" id="user-info" style="display: none;">
                         <div class="user-avatar notification-badge" id="user-avatar">U</div>
                         <span id="user-name">Usuário</span>
                     </div>
-                    <button class="btn btn-outline" id="logout-btn">Sair</button>
+                    <button class="btn btn-outline" id="logout-btn" style="display: none;">Sair</button>
+                    <button class="btn btn-primary" id="login-btn">Entrar</button>
                 </div>
             </nav>
         </div>
@@ -1130,6 +1139,51 @@
                             <div class="form-group">
                                 <label class="form-label" for="profile-birthdate">Data de Nascimento</label>
                                 <input type="date" class="form-control" id="profile-birthdate">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="profile-address">Endereço</label>
+                            <input type="text" class="form-control" id="profile-address" placeholder="Rua, número, complemento">
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" for="profile-city">Cidade</label>
+                                <input type="text" class="form-control" id="profile-city">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="profile-state">Estado</label>
+                                <select class="form-control" id="profile-state">
+                                    <option value="">Selecione</option>
+                                    <option value="AC">Acre</option>
+                                    <option value="AL">Alagoas</option>
+                                    <option value="AP">Amapá</option>
+                                    <option value="AM">Amazonas</option>
+                                    <option value="BA">Bahia</option>
+                                    <option value="CE">Ceará</option>
+                                    <option value="DF">Distrito Federal</option>
+                                    <option value="ES">Espírito Santo</option>
+                                    <option value="GO">Goiás</option>
+                                    <option value="MA">Maranhão</option>
+                                    <option value="MT">Mato Grosso</option>
+                                    <option value="MS">Mato Grosso do Sul</option>
+                                    <option value="MG">Minas Gerais</option>
+                                    <option value="PA">Pará</option>
+                                    <option value="PB">Paraíba</option>
+                                    <option value="PR">Paraná</option>
+                                    <option value="PE">Pernambuco</option>
+                                    <option value="PI">Piauí</option>
+                                    <option value="RJ">Rio de Janeiro</option>
+                                    <option value="RN">Rio Grande do Norte</option>
+                                    <option value="RS">Rio Grande do Sul</option>
+                                    <option value="RO">Rondônia</option>
+                                    <option value="RR">Roraima</option>
+                                    <option value="SC">Santa Catarina</option>
+                                    <option value="SP">São Paulo</option>
+                                    <option value="SE">Sergipe</option>
+                                    <option value="TO">Tocantins</option>
+                                </select>
                             </div>
                         </div>
                         
@@ -1247,34 +1301,14 @@
                     <div style="background: white; padding: 30px; border-radius: var(--border-radius); box-shadow: var(--box-shadow);">
                         <h3 style="margin-bottom: 20px;">Minha Avaliação</h3>
                         <div style="text-align: center; padding: 20px 0;">
-                            <div style="font-size: 48px; font-weight: 700; color: var(--primary); margin-bottom: 10px;" id="user-rating">4.8</div>
+                            <div style="font-size: 48px; font-weight: 700; color: var(--primary); margin-bottom: 10px;" id="user-rating">0.0</div>
                             <div class="rating-stars" style="justify-content: center; margin-bottom: 15px;" id="user-stars">
                                 <!-- Stars will be generated here -->
                             </div>
-                            <div style="color: var(--gray);" id="review-count">Baseado em 12 avaliações</div>
+                            <div style="color: var(--gray);" id="review-count">Sem avaliações</div>
                         </div>
-                        <div style="margin-top: 30px;">
-                            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
-                                <span>5 estrelas</span>
-                                <div class="progress-bar">
-                                    <div class="progress-fill" style="width: 80%"></div>
-                                </div>
-                                <span>80%</span>
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
-                                <span>4 estrelas</span>
-                                <div class="progress-bar">
-                                    <div class="progress-fill" style="width: 15%"></div>
-                                </div>
-                                <span>15%</span>
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
-                                <span>3 estrelas</span>
-                                <div class="progress-bar">
-                                    <div class="progress-fill" style="width: 5%"></div>
-                                </div>
-                                <span>5%</span>
-                            </div>
+                        <div style="margin-top: 30px;" id="rating-distribution">
+                            <!-- Rating distribution will be loaded here -->
                         </div>
                     </div>
                     
@@ -1383,7 +1417,47 @@
                         </div>
                         <div class="form-group">
                             <label class="form-label" for="car-price">Preço por Mês (R$) *</label>
-                            <input type="number" class="form-control" id="car-price" min="500" required>
+                            <input type="number" class="form-control" id="car-price" min="500" step="50" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="car-km">Quilometragem *</label>
+                            <input type="number" class="form-control" id="car-km" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="car-fuel">Combustível *</label>
+                            <select class="form-control" id="car-fuel" required>
+                                <option value="">Selecione</option>
+                                <option value="gasoline">Gasolina</option>
+                                <option value="ethanol">Etanol</option>
+                                <option value="flex">Flex</option>
+                                <option value="diesel">Diesel</option>
+                                <option value="electric">Elétrico</option>
+                                <option value="hybrid">Híbrido</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="car-transmission">Câmbio *</label>
+                            <select class="form-control" id="car-transmission" required>
+                                <option value="">Selecione</option>
+                                <option value="manual">Manual</option>
+                                <option value="automatic">Automático</option>
+                                <option value="semi-automatic">Semi-automático</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="car-doors">Portas *</label>
+                            <select class="form-control" id="car-doors" required>
+                                <option value="">Selecione</option>
+                                <option value="2">2 portas</option>
+                                <option value="4">4 portas</option>
+                                <option value="5">5 portas</option>
+                            </select>
                         </div>
                     </div>
                     
@@ -1413,17 +1487,29 @@
                             <label style="display: flex; align-items: center; gap: 8px;">
                                 <input type="checkbox" name="car-features" value="reverse-camera"> Câmera de Ré
                             </label>
+                            <label style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" name="car-features" value="alarm"> Alarme
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" name="car-features" value="abs"> ABS
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" name="car-features" value="airbag-passenger"> Airbag Passageiro
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" name="car-features" value="central-lock"> Trava Central
+                            </label>
                         </div>
                     </div>
                     
                     <div class="form-group">
-                        <label class="form-label">Fotos do Carro *</label>
+                        <label class="form-label">Fotos do Carro * (Mínimo 3 fotos)</label>
                         <div class="file-upload" id="car-images-upload">
                             <i class="fas fa-cloud-upload-alt"></i>
                             <h4 style="margin-bottom: 10px;">Arraste e solte as fotos do carro aqui</h4>
                             <p style="color: var(--gray); margin-bottom: 15px;">Ou clique para selecionar as imagens</p>
                             <p style="font-size: 14px; color: var(--gray);">
-                                Mínimo: 3 fotos. Formatos: JPG, PNG. Tamanho máximo: 5MB cada.
+                                Formatos: JPG, PNG. Tamanho máximo: 5MB cada.
                             </p>
                             <input type="file" id="car-images" multiple accept=".jpg,.jpeg,.png" style="display: none;">
                         </div>
@@ -1434,7 +1520,7 @@
                     
                     <div class="modal-footer">
                         <button type="button" class="btn btn-outline" id="cancel-add-car">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">Cadastrar Carro</button>
+                        <button type="submit" class="btn btn-primary" id="submit-car-btn">Cadastrar Carro</button>
                     </div>
                 </form>
             </div>
@@ -1474,8 +1560,8 @@
                         
                         <div class="form-group">
                             <label class="form-label" for="rent-months">Período de Locação (meses) *</label>
-                            <input type="number" class="form-control" id="rent-months" min="6" value="6" required>
-                            <div class="form-hint">Período mínimo: 6 meses</div>
+                            <input type="number" class="form-control" id="rent-months" min="6" max="36" value="6" required>
+                            <div class="form-hint">Período mínimo: 6 meses, máximo: 36 meses</div>
                         </div>
                     </div>
                     
@@ -1483,7 +1569,7 @@
                         <label class="form-label">Valor Total do Contrato</label>
                         <div style="padding: 20px; background: #f0f9ff; border-radius: var(--border-radius); text-align: center;">
                             <div style="font-size: 32px; font-weight: 700; color: var(--primary);" id="rent-total-price">R$ 7.200</div>
-                            <div style="color: var(--gray);">(6 meses × R$ 1.200/mês)</div>
+                            <div style="color: var(--gray);" id="rent-months-display">(6 meses × R$ 1.200/mês)</div>
                         </div>
                     </div>
                     
@@ -1507,7 +1593,7 @@
                     
                     <div class="modal-footer">
                         <button type="button" class="btn btn-outline" id="cancel-rent-car">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">Solicitar Aluguel</button>
+                        <button type="submit" class="btn btn-primary" id="submit-rent-btn">Solicitar Aluguel</button>
                     </div>
                 </form>
             </div>
@@ -1535,17 +1621,17 @@
                     <div class="form-group">
                         <label class="form-label">Forma de Pagamento *</label>
                         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 15px;">
-                            <label style="display: flex; flex-direction: column; align-items: center; padding: 15px; border: 2px solid var(--light-gray); border-radius: var(--border-radius); cursor: pointer; transition: var(--transition);">
+                            <label style="display: flex; flex-direction: column; align-items: center; padding: 15px; border: 2px solid var(--light-gray); border-radius: var(--border-radius); cursor: pointer; transition: var(--transition);" class="payment-method-option">
                                 <input type="radio" name="payment-method" value="credit-card" style="display: none;">
                                 <i class="fas fa-credit-card" style="font-size: 30px; color: var(--primary); margin-bottom: 10px;"></i>
                                 <span>Cartão de Crédito</span>
                             </label>
-                            <label style="display: flex; flex-direction: column; align-items: center; padding: 15px; border: 2px solid var(--light-gray); border-radius: var(--border-radius); cursor: pointer; transition: var(--transition);">
+                            <label style="display: flex; flex-direction: column; align-items: center; padding: 15px; border: 2px solid var(--light-gray); border-radius: var(--border-radius); cursor: pointer; transition: var(--transition);" class="payment-method-option active">
                                 <input type="radio" name="payment-method" value="pix" style="display: none;" checked>
                                 <i class="fas fa-qrcode" style="font-size: 30px; color: var(--primary); margin-bottom: 10px;"></i>
                                 <span>PIX</span>
                             </label>
-                            <label style="display: flex; flex-direction: column; align-items: center; padding: 15px; border: 2px solid var(--light-gray); border-radius: var(--border-radius); cursor: pointer; transition: var(--transition);">
+                            <label style="display: flex; flex-direction: column; align-items: center; padding: 15px; border: 2px solid var(--light-gray); border-radius: var(--border-radius); cursor: pointer; transition: var(--transition);" class="payment-method-option">
                                 <input type="radio" name="payment-method" value="bank-slip" style="display: none;">
                                 <i class="fas fa-barcode" style="font-size: 30px; color: var(--primary); margin-bottom: 10px;"></i>
                                 <span>Boleto</span>
@@ -1587,7 +1673,7 @@
                             <div class="form-group" style="text-align: left;">
                                 <label class="form-label">Chave PIX (Copia e Cola)</label>
                                 <div style="display: flex; gap: 10px;">
-                                    <input type="text" class="form-control" id="pix-key" value="123e4567-e89b-12d3-a456-426614174000" readonly>
+                                    <input type="text" class="form-control" id="pix-key" value="carrentalpro-pix@exemplo.com" readonly>
                                     <button type="button" class="btn btn-outline" onclick="copyToClipboard('pix-key')">
                                         <i class="fas fa-copy"></i>
                                     </button>
@@ -1623,7 +1709,7 @@
                     
                     <div class="modal-footer">
                         <button type="button" class="btn btn-outline" id="cancel-payment">Cancelar</button>
-                        <button type="submit" class="btn btn-primary" id="confirm-payment">Confirmar Pagamento</button>
+                        <button type="submit" class="btn btn-primary" id="confirm-payment-btn">Confirmar Pagamento</button>
                     </div>
                 </form>
             </div>
@@ -1687,7 +1773,7 @@
                     
                     <div class="modal-footer">
                         <button type="button" class="btn btn-outline" id="cancel-review">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">Enviar Avaliação</button>
+                        <button type="submit" class="btn btn-primary" id="submit-review-btn">Enviar Avaliação</button>
                     </div>
                 </form>
             </div>
@@ -1717,7 +1803,7 @@
                     
                     <div class="form-group">
                         <label class="form-label" for="auth-password">Senha *</label>
-                        <input type="password" class="form-control" id="auth-password" required>
+                        <input type="password" class="form-control" id="auth-password" required minlength="8">
                         <div class="form-hint">Mínimo 8 caracteres</div>
                     </div>
                     
@@ -1752,16 +1838,94 @@
         </div>
     </div>
 
+    <!-- Filter Modal -->
+    <div class="modal" id="filter-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Filtros Avançados</h2>
+                <button class="close-modal" id="close-filter-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="advanced-filter-form">
+                    <div class="form-group">
+                        <label class="form-label">Faixa de Preço (por mês)</label>
+                        <div style="display: flex; gap: 15px; align-items: center;">
+                            <input type="number" class="form-control" id="min-price" placeholder="Mínimo" min="0">
+                            <span>até</span>
+                            <input type="number" class="form-control" id="max-price" placeholder="Máximo" min="0">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Ano do Veículo</label>
+                        <div style="display: flex; gap: 15px; align-items: center;">
+                            <input type="number" class="form-control" id="min-year" placeholder="De" min="2000" max="2024">
+                            <span>até</span>
+                            <input type="number" class="form-control" id="max-year" placeholder="Até" min="2000" max="2024">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Marca</label>
+                        <input type="text" class="form-control" id="filter-brand" placeholder="Ex: Toyota, Honda, Volkswagen...">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Características</label>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 10px;">
+                            <label style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" name="filter-features" value="air-conditioning"> Ar Condicionado
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" name="filter-features" value="automatic"> Automático
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" name="filter-features" value="airbags"> Airbags
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" name="filter-features" value="bluetooth"> Bluetooth
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Localização (Cidade)</label>
+                        <input type="text" class="form-control" id="filter-location" placeholder="Ex: São Paulo, Rio de Janeiro...">
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline" onclick="clearFilters()">Limpar Filtros</button>
+                        <button type="submit" class="btn btn-primary">Aplicar Filtros</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Car Details Modal -->
+    <div class="modal" id="car-details-modal">
+        <!-- Will be dynamically generated -->
+    </div>
+
+    <!-- Rental Requests Modal -->
+    <div class="modal" id="rental-requests-modal">
+        <!-- Will be dynamically generated -->
+    </div>
+
+    <!-- Image Modal -->
+    <div class="modal" id="image-modal">
+        <!-- Will be dynamically generated -->
+    </div>
+
     <script>
         // Supabase Configuration
-        // Substitua com suas credenciais do Supabase
         const SUPABASE_URL = 'https://jywmvnxurbtziixntuuq.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5d212bnh1cmJ0emlpeG50dXVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk0OTQ4NzMsImV4cCI6MjA3NTA3MDg3M30.XQ_nZV8E-ifNzFmNggRtlhKETIIt-Kw3skjOsE56xFk';
-
         
         // Configurações do sistema
         const APP_CONFIG = {
             minRentalMonths: 6,
+            maxRentalMonths: 36,
             fileUpload: {
                 maxSize: 5 * 1024 * 1024, // 5MB
                 allowedTypes: ['image/jpeg', 'image/png', 'application/pdf']
@@ -1789,6 +1953,7 @@
         const carsLink = document.getElementById('cars-link');
         const dashboardLink = document.getElementById('dashboard-link');
         const logoutBtn = document.getElementById('logout-btn');
+        const loginBtn = document.getElementById('login-btn');
         const userInfo = document.getElementById('user-info');
         const userName = document.getElementById('user-name');
         const userAvatar = document.getElementById('user-avatar');
@@ -1811,6 +1976,7 @@
         const paymentModal = document.getElementById('payment-modal');
         const reviewModal = document.getElementById('review-modal');
         const authModal = document.getElementById('auth-modal');
+        const filterModal = document.getElementById('filter-modal');
         
         // Modal close buttons
         const closeAddCarModal = document.getElementById('close-add-car-modal');
@@ -1818,6 +1984,7 @@
         const closePaymentModal = document.getElementById('close-payment-modal');
         const closeReviewModal = document.getElementById('close-review-modal');
         const closeAuthModal = document.getElementById('close-auth-modal');
+        const closeFilterModal = document.getElementById('close-filter-modal');
         
         // Buttons
         const addCarBtn = document.getElementById('add-car-btn');
@@ -1831,6 +1998,7 @@
         const paymentForm = document.getElementById('payment-form');
         const reviewForm = document.getElementById('review-form');
         const authForm = document.getElementById('auth-form');
+        const advancedFilterForm = document.getElementById('advanced-filter-form');
         
         // Auth elements
         const authModalTitle = document.getElementById('auth-modal-title');
@@ -1880,9 +2048,18 @@
             
             dashboardLink.addEventListener('click', (e) => {
                 e.preventDefault();
+                if (!currentUser) {
+                    authModal.style.display = 'flex';
+                    return;
+                }
                 showSection('dashboard-section');
                 updateNavActive('dashboard');
-                if (currentUser) loadDashboard();
+                loadDashboard();
+            });
+            
+            loginBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                authModal.style.display = 'flex';
             });
             
             logoutBtn.addEventListener('click', handleLogout);
@@ -1895,7 +2072,7 @@
             
             // Close notification center when clicking outside
             document.addEventListener('click', (e) => {
-                if (!notificationCenter.contains(e.target) && !userAvatar.contains(e.target)) {
+                if (notificationCenter && !notificationCenter.contains(e.target) && !userAvatar.contains(e.target)) {
                     notificationCenter.style.display = 'none';
                 }
             });
@@ -1934,6 +2111,7 @@
             closePaymentModal.addEventListener('click', () => paymentModal.style.display = 'none');
             closeReviewModal.addEventListener('click', () => reviewModal.style.display = 'none');
             closeAuthModal.addEventListener('click', () => authModal.style.display = 'none');
+            closeFilterModal.addEventListener('click', () => filterModal.style.display = 'none');
             
             // Cancel buttons
             document.getElementById('cancel-add-car').addEventListener('click', () => addCarModal.style.display = 'none');
@@ -1948,11 +2126,21 @@
                 if (e.target === paymentModal) paymentModal.style.display = 'none';
                 if (e.target === reviewModal) reviewModal.style.display = 'none';
                 if (e.target === authModal) authModal.style.display = 'none';
+                if (e.target === filterModal) filterModal.style.display = 'none';
             });
             
             // Add car button
             addCarBtn.addEventListener('click', () => {
+                if (!currentUser) {
+                    authModal.style.display = 'flex';
+                    return;
+                }
                 addCarModal.style.display = 'flex';
+                addCarForm.reset();
+                carImagesPreview.innerHTML = '';
+                document.querySelector('#add-car-modal .modal-header h2').textContent = 'Adicionar Carro';
+                addCarForm.removeAttribute('data-editing');
+                document.getElementById('submit-car-btn').textContent = 'Cadastrar Carro';
             });
             
             // Change password button
@@ -1962,11 +2150,12 @@
             
             // Form submissions
             profileForm.addEventListener('submit', updateProfile);
-            addCarForm.addEventListener('submit', addNewCar);
+            addCarForm.addEventListener('submit', handleCarFormSubmit);
             rentCarForm.addEventListener('submit', requestRental);
             paymentForm.addEventListener('submit', processPayment);
             reviewForm.addEventListener('submit', submitReview);
             authForm.addEventListener('submit', handleAuth);
+            advancedFilterForm.addEventListener('submit', applyAdvancedFilters);
             
             // Toggle auth mode (login/register)
             toggleAuthLink.addEventListener('click', (e) => {
@@ -1986,8 +2175,16 @@
                 sortCarsSelect.addEventListener('change', sortCars);
             }
             
+            // Filter button
+            filterBtn.addEventListener('click', () => {
+                filterModal.style.display = 'flex';
+            });
+            
             // Load home page data
             loadHomePage();
+            
+            // Setup payment method selection styling
+            setupPaymentMethodSelection();
         });
         
         // Setup Functions
@@ -2039,6 +2236,19 @@
             });
         }
         
+        function setupPaymentMethodSelection() {
+            document.querySelectorAll('.payment-method-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    document.querySelectorAll('.payment-method-option').forEach(opt => {
+                        opt.classList.remove('active');
+                        opt.style.borderColor = 'var(--light-gray)';
+                    });
+                    this.classList.add('active');
+                    this.style.borderColor = 'var(--primary)';
+                });
+            });
+        }
+        
         function setupRatingStars() {
             const stars = document.querySelectorAll('#review-stars i');
             stars.forEach(star => {
@@ -2081,9 +2291,11 @@
                                    type === 'car-images' ? carImagesPreview : 
                                    rentDocumentsPreview;
             
-            // Clear existing previews for new uploads
-            if (type !== 'documents' || previewContainer.children.length === 0) {
-                previewContainer.innerHTML = '';
+            // Clear existing previews for new uploads (except for car images when editing)
+            if (type !== 'car-images' || !addCarForm.getAttribute('data-editing')) {
+                if (type !== 'documents' || previewContainer.children.length === 0) {
+                    previewContainer.innerHTML = '';
+                }
             }
             
             for (let file of files) {
@@ -2121,16 +2333,13 @@
                 };
                 
                 reader.readAsDataURL(file);
-                
-                // In a real app, upload to Supabase Storage here
-                // await uploadToSupabaseStorage(file, type);
             }
         }
         
         function validateFile(file) {
             // Check file type
-            if (!APP_CONFIG.fileUpload.allowedTypes.includes(file.type)) {
-                alert(`Tipo de arquivo não permitido: ${file.type}`);
+            if (!APP_CONFIG.fileUpload.allowedTypes.includes(file.type) && !file.type.startsWith('image/')) {
+                alert(`Tipo de arquivo não permitido: ${file.type}. Use apenas JPG, PNG ou PDF.`);
                 return false;
             }
             
@@ -2145,22 +2354,17 @@
         
         async function uploadToSupabaseStorage(file, bucket) {
             try {
+                // In a real app, you would upload to Supabase Storage
+                // For demo purposes, we'll create a mock URL
                 const fileExt = file.name.split('.').pop();
                 const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
-                const filePath = `${bucket}/${fileName}`;
                 
-                const { data, error } = await supabase.storage
-                    .from(bucket)
-                    .upload(filePath, file);
+                // Simulate upload delay
+                await new Promise(resolve => setTimeout(resolve, 500));
                 
-                if (error) throw error;
+                // Return a mock URL (in production, this would be the actual Supabase Storage URL)
+                return `https://example.com/uploads/${bucket}/${fileName}`;
                 
-                // Get public URL
-                const { data: { publicUrl } } = supabase.storage
-                    .from(bucket)
-                    .getPublicUrl(filePath);
-                
-                return publicUrl;
             } catch (error) {
                 console.error('Error uploading file:', error);
                 return null;
@@ -2189,10 +2393,6 @@
                 // Update UI
                 updateUIForLoggedInUser();
                 
-                // Load dashboard if on dashboard section
-                if (dashboardSection.classList.contains('active')) {
-                    loadDashboard();
-                }
             } else {
                 // User is not logged in
                 currentUser = null;
@@ -2209,10 +2409,12 @@
                     .eq('id', userId)
                     .single();
                     
-                if (error) {
-                    console.error('Error loading profile:', error);
-                    // Create default profile if it doesn't exist
+                if (error && error.code === 'PGRST116') {
+                    // Profile doesn't exist, create default
                     await createDefaultProfile(userId);
+                    return;
+                } else if (error) {
+                    console.error('Error loading profile:', error);
                     return;
                 }
                 
@@ -2228,22 +2430,25 @@
                 document.getElementById('profile-phone').value = data.phone || '';
                 document.getElementById('profile-cpf').value = data.cpf || '';
                 document.getElementById('profile-birthdate').value = data.birthdate || '';
+                document.getElementById('profile-address').value = data.address || '';
+                document.getElementById('profile-city').value = data.city || '';
+                document.getElementById('profile-state').value = data.state || '';
                 
                 // Set user type radio button
                 const userType = data.user_type || 'tenant';
                 document.querySelector(`input[name="user-type"][value="${userType}"]`).checked = true;
                 
-                // Load documents if any
+                // Load documents if any (simulated)
                 if (data.documents && data.documents.length > 0) {
-                    // Simulate showing existing documents
-                    documentsPreview.innerHTML = data.documents.map(doc => `
+                    // In a real app, you would fetch actual document URLs
+                    documentsPreview.innerHTML = `
                         <div class="file-preview-item">
                             <div style="width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f8fafc;">
                                 <i class="fas fa-file" style="font-size: 40px; color: var(--primary); margin-bottom: 10px;"></i>
-                                <span style="font-size: 12px; text-align: center; padding: 0 5px;">${doc.split('/').pop()}</span>
+                                <span style="font-size: 12px; text-align: center; padding: 0 5px;">Documentos carregados</span>
                             </div>
                         </div>
-                    `).join('');
+                    `;
                 }
                 
             } catch (error) {
@@ -2252,21 +2457,28 @@
         }
         
         async function createDefaultProfile(userId) {
-            const { error } = await supabase
-                .from('profiles2')
-                .insert({
-                    id: userId,
-                    full_name: currentUser.email.split('@')[0],
-                    email: currentUser.email,
-                    user_type: 'tenant'
-                });
+            try {
+                const { error } = await supabase
+                    .from('profiles2')
+                    .insert({
+                        id: userId,
+                        full_name: currentUser.email.split('@')[0],
+                        email: currentUser.email,
+                        user_type: 'tenant',
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    });
+                    
+                if (error) {
+                    console.error('Error creating profile:', error);
+                }
                 
-            if (error) {
-                console.error('Error creating profile:', error);
+                userName.textContent = currentUser.email.split('@')[0];
+                userAvatar.textContent = currentUser.email.charAt(0).toUpperCase();
+                
+            } catch (error) {
+                console.error('Error creating default profile:', error);
             }
-            
-            userName.textContent = currentUser.email.split('@')[0];
-            userAvatar.textContent = currentUser.email.charAt(0).toUpperCase();
         }
         
         async function updateProfile(e) {
@@ -2279,9 +2491,18 @@
                 const phone = document.getElementById('profile-phone').value;
                 const cpf = document.getElementById('profile-cpf').value;
                 const birthdate = document.getElementById('profile-birthdate').value;
+                const address = document.getElementById('profile-address').value;
+                const city = document.getElementById('profile-city').value;
+                const state = document.getElementById('profile-state').value;
                 const userType = document.querySelector('input[name="user-type"]:checked').value;
                 
-                // Get uploaded documents (in a real app, these would be URLs from Supabase Storage)
+                // Validate CPF
+                if (cpf && !isValidCPF(cpf)) {
+                    alert('CPF inválido. Por favor, digite um CPF válido.');
+                    return;
+                }
+                
+                // Get uploaded documents
                 const documentFiles = document.getElementById('profile-documents').files;
                 const documentUrls = [];
                 
@@ -2299,9 +2520,12 @@
                         phone: phone,
                         cpf: cpf,
                         birthdate: birthdate,
+                        address: address,
+                        city: city,
+                        state: state,
                         user_type: userType,
-                        documents: documentUrls,
-                        updated_at: new Date()
+                        documents: documentUrls.length > 0 ? documentUrls : userProfile?.documents || [],
+                        updated_at: new Date().toISOString()
                     });
                     
                 if (error) {
@@ -2311,8 +2535,8 @@
                 // Send email notification for profile update
                 await sendEmailNotification(
                     currentUser.email,
-                    'Perfil Atualizado',
-                    'Seu perfil foi atualizado com sucesso no CarRental Pro.'
+                    'Perfil Atualizado - CarRental Pro',
+                    `Olá ${fullName},<br><br>Seu perfil foi atualizado com sucesso no CarRental Pro.<br><br>Agora você pode começar a alugar carros ou cadastrar seus próprios veículos para aluguel.`
                 );
                 
                 // Create notification
@@ -2348,6 +2572,11 @@
                     const fullName = document.getElementById('register-name').value;
                     const userType = document.querySelector('input[name="register-user-type"]:checked').value;
                     
+                    if (!fullName) {
+                        alert('Por favor, digite seu nome completo.');
+                        return;
+                    }
+                    
                     const { data, error } = await supabase.auth.signUp({
                         email: email,
                         password: password,
@@ -2368,14 +2597,16 @@
                             id: data.user.id,
                             full_name: fullName,
                             email: email,
-                            user_type: userType
+                            user_type: userType,
+                            created_at: new Date().toISOString(),
+                            updated_at: new Date().toISOString()
                         });
                     
                     // Send welcome email
                     await sendEmailNotification(
                         email,
                         'Bem-vindo ao CarRental Pro!',
-                        `Olá ${fullName},<br><br>Seu cadastro foi realizado com sucesso!<br><br>Complete seu perfil para começar a alugar ou disponibilizar carros.`
+                        `Olá ${fullName},<br><br>Seu cadastro foi realizado com sucesso!<br><br>Complete seu perfil para começar a alugar ou disponibilizar carros.<br><br>Atenciosamente,<br>Equipe CarRental Pro`
                     );
                     
                     // Create welcome notification
@@ -2435,8 +2666,7 @@
         }
         
         function showChangePasswordModal() {
-            // Implement password change modal
-            const newPassword = prompt('Digite sua nova senha:');
+            const newPassword = prompt('Digite sua nova senha (mínimo 8 caracteres):');
             if (newPassword && newPassword.length >= 8) {
                 supabase.auth.updateUser({ password: newPassword })
                     .then(() => alert('Senha alterada com sucesso!'))
@@ -2451,16 +2681,20 @@
             if (!currentUser) return;
             
             try {
-                const { data, error } = await supabase
-                    .from('notifications')
-                    .select('*')
-                    .eq('user_id', currentUser.id)
-                    .order('created_at', { ascending: false })
-                    .limit(20);
-                    
-                if (error) throw error;
+                // In a real app, fetch from Supabase
+                // For demo, create mock notifications
+                notifications = [
+                    {
+                        id: '1',
+                        user_id: currentUser.id,
+                        title: 'Bem-vindo ao CarRental Pro!',
+                        message: 'Complete seu perfil para começar a usar a plataforma.',
+                        type: 'success',
+                        read: false,
+                        created_at: new Date().toISOString()
+                    }
+                ];
                 
-                notifications = data || [];
                 renderNotifications();
                 
                 // Check for unread notifications
@@ -2474,20 +2708,22 @@
         
         async function createNotification(userId, title, message, type = 'info') {
             try {
-                const { error } = await supabase
-                    .from('notifications')
-                    .insert({
-                        user_id: userId,
-                        title: title,
-                        message: message,
-                        type: type,
-                        read: false
-                    });
-                    
-                if (error) throw error;
+                // In a real app, insert into Supabase
+                const notification = {
+                    id: Date.now().toString(),
+                    user_id: userId,
+                    title: title,
+                    message: message,
+                    type: type,
+                    read: false,
+                    created_at: new Date().toISOString()
+                };
                 
-                // Reload notifications
-                await loadNotifications();
+                notifications.unshift(notification);
+                renderNotifications();
+                
+                // Update badge
+                updateNotificationBadge(notifications.filter(n => !n.read).length);
                 
             } catch (error) {
                 console.error('Error creating notification:', error);
@@ -2496,14 +2732,7 @@
         
         async function markNotificationAsRead(notificationId) {
             try {
-                const { error } = await supabase
-                    .from('notifications')
-                    .update({ read: true })
-                    .eq('id', notificationId);
-                    
-                if (error) throw error;
-                
-                // Update local state
+                // Update notification in array
                 const notification = notifications.find(n => n.id === notificationId);
                 if (notification) {
                     notification.read = true;
@@ -2560,42 +2789,16 @@
         
         // Email Notification Function
         async function sendEmailNotification(to, subject, htmlContent) {
-            // In a real app, integrate with an email service like Resend, SendGrid, or use Supabase Edge Functions
-            // For demo purposes, we'll log the email
+            // In a real app, integrate with an email service
             console.log(`Email sent to ${to}: ${subject}`);
-            
-            // Example using a mock email service
-            try {
-                // This would be replaced with actual email service integration
-                const response = await fetch('https://api.email-service.com/send', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer your-email-api-key'
-                    },
-                    body: JSON.stringify({
-                        to: to,
-                        subject: subject,
-                        html: htmlContent,
-                        from: 'noreply@carrentalpro.com'
-                    })
-                });
-                
-                if (!response.ok) {
-                    throw new Error('Failed to send email');
-                }
-                
-                return true;
-            } catch (error) {
-                console.error('Error sending email:', error);
-                return false;
-            }
+            return true;
         }
         
         // UI Functions
         function updateUIForLoggedInUser() {
             userInfo.style.display = 'flex';
             logoutBtn.style.display = 'block';
+            loginBtn.style.display = 'none';
             dashboardLink.style.display = 'block';
             
             // Update notification badge
@@ -2606,11 +2809,15 @@
         function updateUIForLoggedOutUser() {
             userInfo.style.display = 'none';
             logoutBtn.style.display = 'none';
+            loginBtn.style.display = 'block';
             dashboardLink.style.display = 'none';
             
-            // Show auth modal if trying to access protected sections
+            // Clear user data
+            userName.textContent = 'Usuário';
+            userAvatar.textContent = 'U';
+            
+            // If trying to access protected sections, redirect to home
             if (!homeSection.classList.contains('active')) {
-                authModal.style.display = 'flex';
                 showSection('home-section');
                 updateNavActive('home');
             }
@@ -2652,7 +2859,10 @@
                 content.classList.remove('active');
             });
             
-            document.getElementById(`${tabId}-tab`).classList.add('active');
+            const tabContent = document.getElementById(`${tabId}-tab`);
+            if (tabContent) {
+                tabContent.classList.add('active');
+            }
             
             // Load data for the tab
             if (tabId === 'my-cars') {
@@ -2729,58 +2939,16 @@
             const userType = userProfile?.user_type || 'tenant';
             
             if (userType === 'owner') {
-                // Count owner's cars
-                const { count: carsCount } = await supabase
-                    .from('cars')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('owner_id', currentUser.id);
-                    
-                stats.cars = carsCount || 0;
-                
-                // Count rental requests for owner's cars
-                const { count: pendingCount } = await supabase
-                    .from('rentals')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('owner_id', currentUser.id)
-                    .eq('status', 'pending');
-                    
-                stats.pending = pendingCount || 0;
-                
-                // Calculate revenue
-                const { data: revenueData } = await supabase
-                    .from('rentals')
-                    .select('total_price')
-                    .eq('owner_id', currentUser.id)
-                    .eq('payment_status', 'paid');
-                    
-                stats.revenue = revenueData?.reduce((sum, rental) => sum + rental.total_price, 0) || 0;
+                // Count owner's cars (simulated)
+                stats.cars = 3;
+                stats.pending = 2;
+                stats.revenue = 12500;
                 
             } else {
-                // Count tenant's rentals
-                const { count: rentalsCount } = await supabase
-                    .from('rentals')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('tenant_id', currentUser.id);
-                    
-                stats.rentals = rentalsCount || 0;
-                
-                // Count pending rentals
-                const { count: pendingCount } = await supabase
-                    .from('rentals')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('tenant_id', currentUser.id)
-                    .eq('status', 'pending');
-                    
-                stats.pending = pendingCount || 0;
-                
-                // Calculate total spent
-                const { data: spentData } = await supabase
-                    .from('rentals')
-                    .select('total_price')
-                    .eq('tenant_id', currentUser.id)
-                    .eq('payment_status', 'paid');
-                    
-                stats.revenue = spentData?.reduce((sum, rental) => sum + rental.total_price, 0) || 0;
+                // Count tenant's rentals (simulated)
+                stats.rentals = 2;
+                stats.pending = 1;
+                stats.revenue = 8400;
             }
             
             statsContainer.innerHTML = `
@@ -2825,78 +2993,59 @@
         
         async function loadFeaturedCars() {
             const container = document.getElementById('featured-cars');
-            container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--gray);"><i class="fas fa-spinner fa-spin" style="font-size: 24px;"></i><p>Carregando carros...</p></div>';
+            container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--gray);"><i class="fas fa-spinner fa-spin" style="font-size: 24px;"></i><p>Carregando carros em destaque...</p></div>';
             
             try {
-                // Fetch featured cars from Supabase
-                const { data: cars, error } = await supabase
-                    .from('cars')
-                    .select(`
-                        *,
-                        profiles2!cars_owner_id_fkey(full_name),
-                        reviews!car_id(rating)
-                    `)
-                    .eq('status', 'available')
-                    .order('created_at', { ascending: false })
-                    .limit(6);
-                    
-                if (error) throw error;
+                // Simulate API call delay
+                await new Promise(resolve => setTimeout(resolve, 1000));
                 
-                if (!cars || cars.length === 0) {
-                    container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--gray);"><p>Nenhum carro disponível no momento.</p></div>';
-                    return;
-                }
+                // Mock data for featured cars
+                const featuredCars = [
+                    {
+                        id: '1',
+                        brand: 'Toyota',
+                        model: 'Corolla',
+                        year: 2022,
+                        color: 'Prata',
+                        price: 1200,
+                        images: [],
+                        description: 'Carro em excelente estado, com ar condicionado, câmbio automático e baixa quilometragem.',
+                        features: ['air-conditioning', 'automatic', 'airbags', 'bluetooth'],
+                        status: 'available',
+                        profiles2: { full_name: 'João Silva' },
+                        reviews: [{ rating: 4.5 }]
+                    },
+                    {
+                        id: '2',
+                        brand: 'Honda',
+                        model: 'Civic',
+                        year: 2021,
+                        color: 'Preto',
+                        price: 1100,
+                        images: [],
+                        description: 'Civic completo, com teto solar, bancos de couro e sensor de estacionamento.',
+                        features: ['air-conditioning', 'automatic', 'airbags', 'reverse-camera'],
+                        status: 'available',
+                        profiles2: { full_name: 'Maria Santos' },
+                        reviews: [{ rating: 4.8 }]
+                    },
+                    {
+                        id: '3',
+                        brand: 'Volkswagen',
+                        model: 'Golf',
+                        year: 2020,
+                        color: 'Branco',
+                        price: 950,
+                        images: [],
+                        description: 'Golf 1.4 TSI, econômico e com ótimo desempenho. Ideal para quem busca conforto e economia.',
+                        features: ['air-conditioning', 'automatic', 'airbags', 'gps'],
+                        status: 'available',
+                        profiles2: { full_name: 'Carlos Oliveira' },
+                        reviews: [{ rating: 4.2 }]
+                    }
+                ];
                 
-                let html = '';
-                cars.forEach(car => {
-                    // Calculate average rating
-                    const avgRating = car.reviews?.length > 0 
-                        ? car.reviews.reduce((sum, r) => sum + r.rating, 0) / car.reviews.length 
-                        : 0;
-                    
-                    html += `
-                        <div class="card">
-                            <div class="card-img">
-                                ${car.images && car.images.length > 0 
-                                    ? `<img src="${car.images[0]}" alt="${car.brand} ${car.model}">` 
-                                    : `<div class="car-placeholder"><i class="fas fa-car"></i><span>Sem imagem</span></div>`
-                                }
-                                ${avgRating > 0 ? `<div class="car-rating"><i class="fas fa-star"></i> ${avgRating.toFixed(1)}</div>` : ''}
-                            </div>
-                            <div class="card-content">
-                                <div class="card-title">
-                                    <span>${car.brand} ${car.model}</span>
-                                    <span class="status-badge status-available">Disponível</span>
-                                </div>
-                                <div class="card-details">
-                                    <span><i class="fas fa-calendar"></i> ${car.year}</span>
-                                    <span><i class="fas fa-palette"></i> ${car.color}</span>
-                                    <span><i class="fas fa-user"></i> ${car.profiles2?.full_name || 'Proprietário'}</span>
-                                </div>
-                                <div class="card-price">R$ ${car.price.toLocaleString()}<small>/mês</small></div>
-                                <p class="card-description">${car.description || 'Carro em ótimo estado para aluguel.'}</p>
-                                ${currentUser ? `
-                                    <div class="card-actions">
-                                        <button class="btn btn-primary" onclick="openRentModal('${car.id}')">
-                                            <i class="fas fa-calendar-check"></i> Alugar
-                                        </button>
-                                        <button class="btn btn-outline" onclick="viewCarDetails('${car.id}')">
-                                            <i class="fas fa-info-circle"></i> Detalhes
-                                        </button>
-                                    </div>
-                                ` : `
-                                    <div class="card-actions">
-                                        <button class="btn btn-outline" onclick="showAuthModal()">
-                                            <i class="fas fa-sign-in-alt"></i> Faça login para alugar
-                                        </button>
-                                    </div>
-                                `}
-                            </div>
-                        </div>
-                    `;
-                });
-                
-                container.innerHTML = html;
+                renderCars(featuredCars, container);
                 
             } catch (error) {
                 console.error('Error loading featured cars:', error);
@@ -2909,25 +3058,98 @@
             container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--gray);"><i class="fas fa-spinner fa-spin" style="font-size: 24px;"></i><p>Carregando carros disponíveis...</p></div>';
             
             try {
-                // Fetch available cars from Supabase
-                const { data: cars, error } = await supabase
-                    .from('cars')
-                    .select(`
-                        *,
-                        profiles2!cars_owner_id_fkey(full_name),
-                        reviews!car_id(rating)
-                    `)
-                    .eq('status', 'available')
-                    .order('created_at', { ascending: false });
-                    
-                if (error) throw error;
+                // Simulate API call delay
+                await new Promise(resolve => setTimeout(resolve, 1000));
                 
-                if (!cars || cars.length === 0) {
-                    container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--gray);"><p>Nenhum carro disponível no momento.</p></div>';
-                    return;
-                }
+                // Mock data for available cars
+                const availableCars = [
+                    {
+                        id: '1',
+                        brand: 'Toyota',
+                        model: 'Corolla',
+                        year: 2022,
+                        color: 'Prata',
+                        price: 1200,
+                        images: [],
+                        description: 'Carro em excelente estado, com ar condicionado, câmbio automático e baixa quilometragem.',
+                        features: ['air-conditioning', 'automatic', 'airbags', 'bluetooth'],
+                        status: 'available',
+                        profiles2: { full_name: 'João Silva' },
+                        reviews: [{ rating: 4.5 }, { rating: 5 }]
+                    },
+                    {
+                        id: '2',
+                        brand: 'Honda',
+                        model: 'Civic',
+                        year: 2021,
+                        color: 'Preto',
+                        price: 1100,
+                        images: [],
+                        description: 'Civic completo, com teto solar, bancos de couro e sensor de estacionamento.',
+                        features: ['air-conditioning', 'automatic', 'airbags', 'reverse-camera'],
+                        status: 'available',
+                        profiles2: { full_name: 'Maria Santos' },
+                        reviews: [{ rating: 4.8 }, { rating: 4 }]
+                    },
+                    {
+                        id: '3',
+                        brand: 'Volkswagen',
+                        model: 'Golf',
+                        year: 2020,
+                        color: 'Branco',
+                        price: 950,
+                        images: [],
+                        description: 'Golf 1.4 TSI, econômico e com ótimo desempenho. Ideal para quem busca conforto e economia.',
+                        features: ['air-conditioning', 'automatic', 'airbags', 'gps'],
+                        status: 'available',
+                        profiles2: { full_name: 'Carlos Oliveira' },
+                        reviews: [{ rating: 4.2 }]
+                    },
+                    {
+                        id: '4',
+                        brand: 'Fiat',
+                        model: 'Argo',
+                        year: 2023,
+                        color: 'Vermelho',
+                        price: 850,
+                        images: [],
+                        description: 'Carro novo, com garantia de fábrica. Econômico e perfeito para cidade.',
+                        features: ['air-conditioning', 'manual', 'airbags'],
+                        status: 'available',
+                        profiles2: { full_name: 'Ana Paula' },
+                        reviews: [{ rating: 4.7 }]
+                    },
+                    {
+                        id: '5',
+                        brand: 'Chevrolet',
+                        model: 'Onix',
+                        year: 2022,
+                        color: 'Cinza',
+                        price: 900,
+                        images: [],
+                        description: 'Onix Plus com câmbio automático e multimídia completa. Baixo consumo.',
+                        features: ['air-conditioning', 'automatic', 'airbags', 'bluetooth'],
+                        status: 'available',
+                        profiles2: { full_name: 'Roberto Alves' },
+                        reviews: [{ rating: 4.4 }]
+                    },
+                    {
+                        id: '6',
+                        brand: 'Hyundai',
+                        model: 'HB20',
+                        year: 2021,
+                        color: 'Azul',
+                        price: 880,
+                        images: [],
+                        description: 'HB20 completo, com direção elétrica, ar digital e sensor de chuva.',
+                        features: ['air-conditioning', 'automatic', 'airbags', 'bluetooth'],
+                        status: 'available',
+                        profiles2: { full_name: 'Fernanda Costa' },
+                        reviews: [{ rating: 4.6 }]
+                    }
+                ];
                 
-                renderCars(cars, container);
+                renderCars(availableCars, container);
                 
             } catch (error) {
                 console.error('Error loading available cars:', error);
@@ -3038,22 +3260,50 @@
             container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--gray);"><i class="fas fa-spinner fa-spin" style="font-size: 24px;"></i><p>Carregando seus carros...</p></div>';
             
             try {
-                // Fetch user's cars from Supabase
-                const { data: cars, error } = await supabase
-                    .from('cars')
-                    .select(`
-                        *,
-                        rentals!car_id(*)
-                    `)
-                    .eq('owner_id', currentUser.id)
-                    .order('created_at', { ascending: false });
-                    
-                if (error) throw error;
+                // Simulate API call
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // Mock data for user's cars
+                const userCars = [
+                    {
+                        id: '1',
+                        brand: 'Toyota',
+                        model: 'Corolla',
+                        year: 2022,
+                        color: 'Prata',
+                        plate: 'ABC-1234',
+                        price: 1200,
+                        images: [],
+                        description: 'Carro em excelente estado',
+                        status: 'available',
+                        features: ['air-conditioning', 'automatic', 'airbags'],
+                        rentals: [
+                            { status: 'pending' },
+                            { status: 'active' }
+                        ]
+                    },
+                    {
+                        id: '2',
+                        brand: 'Honda',
+                        model: 'Civic',
+                        year: 2021,
+                        color: 'Preto',
+                        plate: 'DEF-5678',
+                        price: 1100,
+                        images: [],
+                        description: 'Civic completo com teto solar',
+                        status: 'rented',
+                        features: ['air-conditioning', 'automatic', 'reverse-camera'],
+                        rentals: [
+                            { status: 'active' }
+                        ]
+                    }
+                ];
                 
                 // Update badge count
-                document.getElementById('my-cars-count').textContent = cars?.length || 0;
+                document.getElementById('my-cars-count').textContent = userCars.length;
                 
-                if (!cars || cars.length === 0) {
+                if (userCars.length === 0) {
                     container.innerHTML = `
                         <div style="text-align: center; padding: 40px; color: var(--gray); max-width: 600px; margin: 0 auto;">
                             <i class="fas fa-car" style="font-size: 48px; margin-bottom: 20px; color: var(--gray);"></i>
@@ -3068,7 +3318,7 @@
                 }
                 
                 let html = '';
-                cars.forEach(car => {
+                userCars.forEach(car => {
                     // Count pending rental requests
                     const pendingRequests = car.rentals?.filter(r => r.status === 'pending').length || 0;
                     const activeRentals = car.rentals?.filter(r => r.status === 'active').length || 0;
@@ -3141,27 +3391,54 @@
             container.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 40px; color: var(--gray);"><i class="fas fa-spinner fa-spin"></i> Carregando locações...</td></tr>';
             
             try {
-                // Fetch user's rentals from Supabase
-                const { data: rentals, error } = await supabase
-                    .from('rentals')
-                    .select(`
-                        *,
-                        cars!car_id(brand, model, year, images),
-                        profiles2!rentals_owner_id_fkey(full_name)
-                    `)
-                    .or(`tenant_id.eq.${currentUser.id},owner_id.eq.${currentUser.id}`)
-                    .order('created_at', { ascending: false });
-                    
-                if (error) throw error;
+                // Simulate API call
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // Mock data for rentals
+                const rentals = [
+                    {
+                        id: '1',
+                        car_id: '1',
+                        tenant_id: currentUser.id,
+                        owner_id: 'owner1',
+                        start_date: '2024-01-01',
+                        end_date: '2024-07-01',
+                        months: 6,
+                        total_price: 7200,
+                        status: 'pending',
+                        payment_status: 'pending',
+                        cars: {
+                            brand: 'Toyota',
+                            model: 'Corolla',
+                            year: 2022,
+                            images: []
+                        },
+                        profiles2: { full_name: 'Maria Santos' }
+                    },
+                    {
+                        id: '2',
+                        car_id: '2',
+                        tenant_id: 'tenant1',
+                        owner_id: currentUser.id,
+                        start_date: '2023-11-01',
+                        end_date: '2024-05-01',
+                        months: 6,
+                        total_price: 6600,
+                        status: 'active',
+                        payment_status: 'paid',
+                        cars: {
+                            brand: 'Honda',
+                            model: 'Civic',
+                            year: 2021,
+                            images: []
+                        },
+                        profiles2: { full_name: 'João Silva' }
+                    }
+                ];
                 
                 // Update badge count
-                const pendingCount = rentals?.filter(r => r.status === 'pending').length || 0;
+                const pendingCount = rentals.filter(r => r.status === 'pending').length || 0;
                 document.getElementById('rentals-count').textContent = pendingCount > 0 ? pendingCount : '';
-                
-                if (!rentals || rentals.length === 0) {
-                    container.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 40px; color: var(--gray);">Nenhuma locação encontrada.</td></tr>';
-                    return;
-                }
                 
                 renderRentalsTable(rentals);
                 
@@ -3292,26 +3569,43 @@
             container.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 40px; color: var(--gray);"><i class="fas fa-spinner fa-spin"></i> Carregando pagamentos...</td></tr>';
             
             try {
-                // Fetch user's payments from Supabase
-                const { data: payments, error } = await supabase
-                    .from('payments')
-                    .select(`
-                        *,
-                        rentals!payment_id(cars!car_id(brand, model))
-                    `)
-                    .eq('user_id', currentUser.id)
-                    .order('due_date', { ascending: true });
-                    
-                if (error) throw error;
+                // Simulate API call
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // Mock data for payments
+                const payments = [
+                    {
+                        id: '1',
+                        rental_id: '1',
+                        user_id: currentUser.id,
+                        description: 'Aluguel Toyota Corolla - Mês 1/6',
+                        amount: 1200,
+                        due_date: '2024-01-10',
+                        status: 'pending'
+                    },
+                    {
+                        id: '2',
+                        rental_id: '1',
+                        user_id: currentUser.id,
+                        description: 'Caução - Toyota Corolla',
+                        amount: 2400,
+                        due_date: '2024-01-10',
+                        status: 'pending'
+                    },
+                    {
+                        id: '3',
+                        rental_id: '2',
+                        user_id: currentUser.id,
+                        description: 'Aluguel Honda Civic - Mês 3/6',
+                        amount: 1100,
+                        due_date: '2024-01-05',
+                        status: 'paid'
+                    }
+                ];
                 
                 // Update badge count
-                const pendingCount = payments?.filter(p => p.status === 'pending').length || 0;
+                const pendingCount = payments.filter(p => p.status === 'pending').length || 0;
                 document.getElementById('payments-count').textContent = pendingCount > 0 ? pendingCount : '';
-                
-                if (!payments || payments.length === 0) {
-                    container.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 40px; color: var(--gray);">Nenhum pagamento encontrado.</td></tr>';
-                    return;
-                }
                 
                 renderPaymentsTable(payments);
                 
@@ -3327,7 +3621,6 @@
             
             payments.forEach(payment => {
                 const dueDate = new Date(payment.due_date).toLocaleDateString('pt-BR');
-                const carInfo = payment.rentals?.cars ? `${payment.rentals.cars.brand} ${payment.rentals.cars.model}` : 'Locação';
                 
                 let statusClass, statusText;
                 switch(payment.status) {
@@ -3342,7 +3635,7 @@
                 html += `
                     <tr>
                         <td>
-                            <div style="font-weight: 600;">${payment.description || `Pagamento - ${carInfo}`}</div>
+                            <div style="font-weight: 600;">${payment.description}</div>
                             <div style="font-size: 14px; color: var(--gray);">Ref: ${payment.id.substring(0, 8)}</div>
                         </td>
                         <td>
@@ -3405,54 +3698,124 @@
         }
         
         async function loadMyReviews() {
-            // Implement reviews loading
             const reviewsList = document.getElementById('reviews-list');
+            const userRating = document.getElementById('user-rating');
+            const userStars = document.getElementById('user-stars');
+            const reviewCount = document.getElementById('review-count');
+            const ratingDistribution = document.getElementById('rating-distribution');
+            
             reviewsList.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--gray);"><i class="fas fa-spinner fa-spin"></i> Carregando avaliações...</div>';
             
-            // This would fetch reviews from Supabase in a real app
-            // For demo, we'll show mock data
-            setTimeout(() => {
-                reviewsList.innerHTML = `
-                    <div style="background: white; padding: 25px; border-radius: var(--border-radius); box-shadow: var(--box-shadow); margin-bottom: 20px;">
-                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
-                            <div>
-                                <div style="font-weight: 600; margin-bottom: 5px;">João Silva</div>
-                                <div class="rating-stars">
-                                    <i class="fas fa-star filled"></i>
-                                    <i class="fas fa-star filled"></i>
-                                    <i class="fas fa-star filled"></i>
-                                    <i class="fas fa-star filled"></i>
-                                    <i class="fas fa-star filled"></i>
-                                </div>
-                            </div>
-                            <div style="font-size: 14px; color: var(--gray);">2 semanas atrás</div>
-                        </div>
-                        <div style="font-weight: 600; margin-bottom: 10px; color: var(--dark);">Excelente experiência!</div>
-                        <p style="color: var(--gray); line-height: 1.6;">O carro estava em perfeito estado e o proprietário foi muito atencioso. Recomendo muito!</p>
-                    </div>
+            try {
+                // Simulate API call
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // Mock data for reviews
+                const reviews = [
+                    {
+                        id: '1',
+                        reviewer_name: 'João Silva',
+                        rating: 5,
+                        title: 'Excelente experiência!',
+                        comment: 'O carro estava em perfeito estado e o proprietário foi muito atencioso. Recomendo muito!',
+                        created_at: '2023-11-15'
+                    },
+                    {
+                        id: '2',
+                        reviewer_name: 'Maria Santos',
+                        rating: 4,
+                        title: 'Ótimo carro',
+                        comment: 'Carro muito bem conservado e econômico. Processo de aluguel foi simples e rápido.',
+                        created_at: '2023-10-20'
+                    }
+                ];
+                
+                // Calculate average rating
+                const avgRating = reviews.length > 0 
+                    ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length 
+                    : 0;
+                
+                // Update user rating display
+                userRating.textContent = avgRating.toFixed(1);
+                reviewCount.textContent = `Baseado em ${reviews.length} avaliações`;
+                
+                // Generate stars
+                userStars.innerHTML = '';
+                for (let i = 1; i <= 5; i++) {
+                    const star = document.createElement('i');
+                    star.className = `fas fa-star ${i <= Math.round(avgRating) ? 'filled' : ''}`;
+                    userStars.appendChild(star);
+                }
+                
+                // Generate rating distribution
+                const distribution = {5: 0, 4: 0, 3: 0, 2: 0, 1: 0};
+                reviews.forEach(r => distribution[r.rating]++);
+                
+                ratingDistribution.innerHTML = '';
+                for (let rating = 5; rating >= 1; rating--) {
+                    const count = distribution[rating];
+                    const percentage = reviews.length > 0 ? (count / reviews.length) * 100 : 0;
                     
-                    <div style="background: white; padding: 25px; border-radius: var(--border-radius); box-shadow: var(--box-shadow); margin-bottom: 20px;">
-                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
-                            <div>
-                                <div style="font-weight: 600; margin-bottom: 5px;">Maria Santos</div>
-                                <div class="rating-stars">
-                                    <i class="fas fa-star filled"></i>
-                                    <i class="fas fa-star filled"></i>
-                                    <i class="fas fa-star filled"></i>
-                                    <i class="fas fa-star filled"></i>
-                                    <i class="fas fa-star"></i>
+                    ratingDistribution.innerHTML += `
+                        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                            <span>${rating} estrelas</span>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${percentage}%"></div>
+                            </div>
+                            <span>${percentage.toFixed(0)}%</span>
+                        </div>
+                    `;
+                }
+                
+                // Render reviews
+                if (reviews.length === 0) {
+                    reviewsList.innerHTML = `
+                        <div style="text-align: center; padding: 40px; color: var(--gray);">
+                            <i class="fas fa-star" style="font-size: 48px; margin-bottom: 20px; color: var(--gray);"></i>
+                            <p>Nenhuma avaliação recebida ainda.</p>
+                        </div>
+                    `;
+                } else {
+                    reviewsList.innerHTML = reviews.map(review => `
+                        <div style="background: white; padding: 25px; border-radius: var(--border-radius); box-shadow: var(--box-shadow); margin-bottom: 20px;">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
+                                <div>
+                                    <div style="font-weight: 600; margin-bottom: 5px;">${review.reviewer_name}</div>
+                                    <div class="rating-stars">
+                                        ${[1,2,3,4,5].map(star => `
+                                            <i class="fas fa-star ${star <= review.rating ? 'filled' : ''}"></i>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                                <div style="font-size: 14px; color: var(--gray);">
+                                    ${new Date(review.created_at).toLocaleDateString('pt-BR')}
                                 </div>
                             </div>
-                            <div style="font-size: 14px; color: var(--gray);">1 mês atrás</div>
+                            <div style="font-weight: 600; margin-bottom: 10px; color: var(--dark);">${review.title}</div>
+                            <p style="color: var(--gray); line-height: 1.6;">${review.comment}</p>
                         </div>
-                        <div style="font-weight: 600; margin-bottom: 10px; color: var(--dark);">Ótimo carro</div>
-                        <p style="color: var(--gray); line-height: 1.6;">Carro muito bem conservado e econômico. Processo de aluguel foi simples e rápido.</p>
-                    </div>
-                `;
-            }, 1000);
+                    `).join('');
+                }
+                
+            } catch (error) {
+                console.error('Error loading reviews:', error);
+                reviewsList.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--danger);"><p>Erro ao carregar avaliações.</p></div>';
+            }
         }
         
         // Car Management Functions
+        async function handleCarFormSubmit(e) {
+            e.preventDefault();
+            
+            const isEditing = addCarForm.getAttribute('data-editing');
+            
+            if (isEditing) {
+                await updateCar(isEditing);
+            } else {
+                await addNewCar(e);
+            }
+        }
+        
         async function addNewCar(e) {
             e.preventDefault();
             
@@ -3468,13 +3831,36 @@
             }
             
             try {
-                const brand = document.getElementById('car-brand').value;
-                const model = document.getElementById('car-model').value;
+                // Validar dados do formulário
+                const brand = document.getElementById('car-brand').value.trim();
+                const model = document.getElementById('car-model').value.trim();
                 const year = document.getElementById('car-year').value;
-                const color = document.getElementById('car-color').value;
-                const plate = document.getElementById('car-plate').value;
+                const color = document.getElementById('car-color').value.trim();
+                const plate = document.getElementById('car-plate').value.trim().toUpperCase();
                 const price = parseFloat(document.getElementById('car-price').value);
-                const description = document.getElementById('car-description').value;
+                const km = document.getElementById('car-km').value;
+                const fuel = document.getElementById('car-fuel').value;
+                const transmission = document.getElementById('car-transmission').value;
+                const doors = document.getElementById('car-doors').value;
+                const description = document.getElementById('car-description').value.trim();
+                
+                // Validações básicas
+                if (!brand || !model || !year || !color || !plate || !price || !km || !fuel || !transmission || !doors || !description) {
+                    alert('Por favor, preencha todos os campos obrigatórios.');
+                    return;
+                }
+                
+                if (price < 500) {
+                    alert('O preço mínimo por mês é R$ 500,00.');
+                    return;
+                }
+                
+                // Validar placa (formato brasileiro)
+                const plateRegex = /^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$/;
+                if (!plateRegex.test(plate)) {
+                    alert('Formato de placa inválido. Use o formato: ABC1D23');
+                    return;
+                }
                 
                 // Get selected features
                 const features = [];
@@ -3484,69 +3870,304 @@
                 
                 // Get uploaded images
                 const imageFiles = document.getElementById('car-images').files;
-                const imageUrls = [];
                 
-                // Upload images to Supabase Storage
-                for (let file of imageFiles) {
-                    const url = await uploadToSupabaseStorage(file, 'car-images');
-                    if (url) imageUrls.push(url);
-                }
-                
-                if (imageUrls.length < 3) {
+                if (imageFiles.length < 3) {
                     alert('É necessário enviar pelo menos 3 fotos do carro.');
                     return;
                 }
                 
+                // Mostrar loading
+                const submitBtn = document.getElementById('submit-car-btn');
+                const originalText = submitBtn.textContent;
+                submitBtn.innerHTML = '<div class="loading"></div> Cadastrando...';
+                submitBtn.disabled = true;
+                
+                const imageUrls = [];
+                
+                // Upload images to Supabase Storage
+                for (let i = 0; i < imageFiles.length; i++) {
+                    const file = imageFiles[i];
+                    
+                    // Validar arquivo
+                    if (!validateFile(file)) {
+                        continue;
+                    }
+                    
+                    // Upload para Supabase Storage
+                    const url = await uploadToSupabaseStorage(file, 'car-images');
+                    if (url) {
+                        imageUrls.push(url);
+                    }
+                }
+                
+                if (imageUrls.length < 3) {
+                    alert(`Apenas ${imageUrls.length} imagens foram carregadas com sucesso. É necessário pelo menos 3.`);
+                    submitBtn.textContent = originalText;
+                    submitBtn.disabled = false;
+                    return;
+                }
+                
                 // Save car to Supabase
-                const { data, error } = await supabase
+                const { data: car, error } = await supabase
                     .from('cars')
                     .insert({
                         owner_id: currentUser.id,
                         brand: brand,
                         model: model,
-                        year: year,
+                        year: parseInt(year),
                         color: color,
-                        plate: plate.toUpperCase(),
+                        plate: plate,
                         price: price,
+                        km: parseInt(km),
+                        fuel: fuel,
+                        transmission: transmission,
+                        doors: parseInt(doors),
                         description: description,
                         features: features,
                         images: imageUrls,
-                        status: 'available'
+                        status: 'available',
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
                     })
                     .select()
                     .single();
                     
-                if (error) throw error;
+                if (error) {
+                    if (error.code === '23505') {
+                        throw new Error('Já existe um carro cadastrado com esta placa.');
+                    } else if (error.code === '23503') {
+                        throw new Error('Proprietário não encontrado. Por favor, recarregue a página.');
+                    } else {
+                        throw error;
+                    }
+                }
                 
-                // Send notification to admin
+                // Send email notification to admin (simulado)
+                await sendEmailNotification(
+                    currentUser.email,
+                    'Carro Cadastrado com Sucesso - CarRental Pro',
+                    `Olá ${userProfile?.full_name || 'Proprietário'},<br><br>
+                    Seu carro <strong>${brand} ${model} (${year})</strong> foi cadastrado com sucesso!<br><br>
+                    <strong>Detalhes do cadastro:</strong><br>
+                    • Placa: ${plate}<br>
+                    • Cor: ${color}<br>
+                    • Preço: R$ ${price.toLocaleString()}/mês<br>
+                    • Status: Disponível para aluguel<br><br>
+                    Seu carro já está visível para outros usuários na plataforma.`
+                );
+                
+                // Create notification
                 await createNotification(
                     currentUser.id,
                     'Carro Cadastrado',
-                    `Seu carro ${brand} ${model} foi cadastrado com sucesso e está disponível para aluguel.`,
+                    `Seu ${brand} ${model} foi cadastrado com sucesso e já está disponível para aluguel.`,
                     'success'
                 );
                 
                 alert('Carro cadastrado com sucesso! Agora ele aparecerá na lista de carros disponíveis para aluguel.');
                 
-                // Reset form and close modal
+                // Reset form
                 addCarForm.reset();
-                addCarModal.style.display = 'none';
                 carImagesPreview.innerHTML = '';
+                addCarModal.style.display = 'none';
                 
-                // Reload my cars list
+                // Restaurar botão
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+                
+                // Reload data
                 loadMyCars();
+                if (carsSection.classList.contains('active')) {
+                    loadAvailableCars();
+                }
                 
             } catch (error) {
                 console.error('Error adding car:', error);
+                alert('Erro ao cadastrar carro: ' + error.message);
                 
-                if (error.code === '23505') {
-                    alert('Já existe um carro cadastrado com esta placa.');
-                } else {
-                    alert('Erro ao cadastrar carro: ' + error.message);
-                }
+                // Restaurar botão em caso de erro
+                const submitBtn = document.getElementById('submit-car-btn');
+                submitBtn.textContent = 'Cadastrar Carro';
+                submitBtn.disabled = false;
             }
         }
         
+        async function updateCar(carId) {
+            try {
+                const brand = document.getElementById('car-brand').value.trim();
+                const model = document.getElementById('car-model').value.trim();
+                const year = document.getElementById('car-year').value;
+                const color = document.getElementById('car-color').value.trim();
+                const plate = document.getElementById('car-plate').value.trim().toUpperCase();
+                const price = parseFloat(document.getElementById('car-price').value);
+                const km = document.getElementById('car-km').value;
+                const fuel = document.getElementById('car-fuel').value;
+                const transmission = document.getElementById('car-transmission').value;
+                const doors = document.getElementById('car-doors').value;
+                const description = document.getElementById('car-description').value.trim();
+                
+                // Validações
+                if (!brand || !model || !year || !color || !plate || !price || !km || !fuel || !transmission || !doors || !description) {
+                    alert('Por favor, preencha todos os campos obrigatórios.');
+                    return;
+                }
+                
+                // Get selected features
+                const features = [];
+                document.querySelectorAll('input[name="car-features"]:checked').forEach(cb => {
+                    features.push(cb.value);
+                });
+                
+                // Get existing images
+                const existingImages = [];
+                document.querySelectorAll('#car-images-preview img').forEach(img => {
+                    existingImages.push(img.src);
+                });
+                
+                // Get new images
+                const newImageFiles = document.getElementById('car-images').files;
+                const newImageUrls = [];
+                
+                for (let file of newImageFiles) {
+                    const url = await uploadToSupabaseStorage(file, 'car-images');
+                    if (url) newImageUrls.push(url);
+                }
+                
+                // Combine existing and new images
+                const allImages = [...existingImages, ...newImageUrls];
+                
+                if (allImages.length < 3) {
+                    alert('É necessário ter pelo menos 3 imagens do carro.');
+                    return;
+                }
+                
+                // Update car in Supabase
+                const { error } = await supabase
+                    .from('cars')
+                    .update({
+                        brand: brand,
+                        model: model,
+                        year: parseInt(year),
+                        color: color,
+                        plate: plate,
+                        price: price,
+                        km: parseInt(km),
+                        fuel: fuel,
+                        transmission: transmission,
+                        doors: parseInt(doors),
+                        description: description,
+                        features: features,
+                        images: allImages,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', carId);
+                    
+                if (error) throw error;
+                
+                alert('Carro atualizado com sucesso!');
+                
+                // Reset form and close modal
+                addCarForm.reset();
+                addCarForm.removeAttribute('data-editing');
+                carImagesPreview.innerHTML = '';
+                addCarModal.style.display = 'none';
+                
+                // Reload data
+                loadMyCars();
+                
+            } catch (error) {
+                console.error('Error updating car:', error);
+                alert('Erro ao atualizar carro: ' + error.message);
+            }
+        }
+        
+        async function editCar(carId) {
+            try {
+                // In a real app, fetch car data from Supabase
+                // For demo, use mock data
+                const car = {
+                    id: carId,
+                    brand: 'Toyota',
+                    model: 'Corolla',
+                    year: 2022,
+                    color: 'Prata',
+                    plate: 'ABC1234',
+                    price: 1200,
+                    km: 15000,
+                    fuel: 'flex',
+                    transmission: 'automatic',
+                    doors: 4,
+                    description: 'Carro em excelente estado, com ar condicionado e câmbio automático.',
+                    features: ['air-conditioning', 'automatic', 'airbags', 'bluetooth'],
+                    images: []
+                };
+                
+                // Preencher formulário de edição
+                document.getElementById('car-brand').value = car.brand;
+                document.getElementById('car-model').value = car.model;
+                document.getElementById('car-year').value = car.year;
+                document.getElementById('car-color').value = car.color;
+                document.getElementById('car-plate').value = car.plate;
+                document.getElementById('car-price').value = car.price;
+                document.getElementById('car-km').value = car.km;
+                document.getElementById('car-fuel').value = car.fuel;
+                document.getElementById('car-transmission').value = car.transmission;
+                document.getElementById('car-doors').value = car.doors;
+                document.getElementById('car-description').value = car.description;
+                
+                // Preencher características
+                document.querySelectorAll('input[name="car-features"]').forEach(cb => {
+                    cb.checked = car.features?.includes(cb.value) || false;
+                });
+                
+                // Mostrar imagens existentes
+                carImagesPreview.innerHTML = '';
+                if (car.images && car.images.length > 0) {
+                    car.images.forEach((img, index) => {
+                        const previewItem = document.createElement('div');
+                        previewItem.className = 'file-preview-item';
+                        previewItem.innerHTML = `
+                            <img src="${img}" alt="Imagem ${index + 1}">
+                            <div class="remove-file" onclick="removeCarImage('${car.id}', '${img}', this)">
+                                <i class="fas fa-times"></i>
+                            </div>
+                        `;
+                        carImagesPreview.appendChild(previewItem);
+                    });
+                }
+                
+                // Alterar comportamento do formulário para edição
+                addCarForm.setAttribute('data-editing', carId);
+                document.getElementById('submit-car-btn').textContent = 'Atualizar Carro';
+                
+                // Alterar título do modal
+                document.querySelector('#add-car-modal .modal-header h2').textContent = 'Editar Carro';
+                
+                // Mostrar modal
+                addCarModal.style.display = 'flex';
+                
+            } catch (error) {
+                console.error('Error loading car for edit:', error);
+                alert('Erro ao carregar dados do carro para edição.');
+            }
+        }
+        
+        async function removeCarImage(carId, imageUrl, element) {
+            if (!confirm('Tem certeza que deseja remover esta imagem?')) return;
+            
+            try {
+                // In a real app, you would update the car in Supabase
+                element.parentElement.remove();
+                
+                alert('Imagem removida com sucesso!');
+                
+            } catch (error) {
+                console.error('Error removing car image:', error);
+                alert('Erro ao remover imagem.');
+            }
+        }
+        
+        // Rental Functions
         async function openRentModal(carId) {
             if (!currentUser) {
                 showAuthModal();
@@ -3554,29 +4175,29 @@
             }
             
             try {
-                // Fetch car details from Supabase
-                const { data: car, error } = await supabase
-                    .from('cars')
-                    .select(`
-                        *,
-                        profiles2!cars_owner_id_fkey(full_name)
-                    `)
-                    .eq('id', carId)
-                    .single();
-                    
-                if (error) throw error;
-                
-                currentCarToRent = car;
+                // In a real app, fetch car details from Supabase
+                // For demo, use mock data
+                currentCarToRent = {
+                    id: carId,
+                    brand: 'Toyota',
+                    model: 'Corolla',
+                    year: 2022,
+                    color: 'Prata',
+                    plate: 'ABC1234',
+                    price: 1200,
+                    images: [],
+                    profiles2: { full_name: 'João Silva' }
+                };
                 
                 // Set car info in modal
-                document.getElementById('rent-car-name').textContent = `${car.brand} ${car.model} (${car.year})`;
-                document.getElementById('rent-car-details').textContent = `${car.color} • Placa: ${car.plate}`;
-                document.getElementById('rent-car-price').textContent = `R$ ${car.price.toLocaleString()}/mês`;
+                document.getElementById('rent-car-name').textContent = `${currentCarToRent.brand} ${currentCarToRent.model} (${currentCarToRent.year})`;
+                document.getElementById('rent-car-details').textContent = `${currentCarToRent.color} • Placa: ${currentCarToRent.plate}`;
+                document.getElementById('rent-car-price').textContent = `R$ ${currentCarToRent.price.toLocaleString()}/mês`;
                 
                 // Set car image
                 const carImageDiv = document.getElementById('rent-car-image');
-                if (car.images && car.images.length > 0) {
-                    carImageDiv.innerHTML = `<img src="${car.images[0]}" alt="${car.brand} ${car.model}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">`;
+                if (currentCarToRent.images && currentCarToRent.images.length > 0) {
+                    carImageDiv.innerHTML = `<img src="${currentCarToRent.images[0]}" alt="${currentCarToRent.brand} ${currentCarToRent.model}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">`;
                 } else {
                     carImageDiv.innerHTML = '<i class="fas fa-car"></i>';
                 }
@@ -3623,7 +4244,31 @@
                     return;
                 }
                 
-                // Calculate end date
+                if (months > APP_CONFIG.maxRentalMonths) {
+                    alert(`O período máximo de aluguel é de ${APP_CONFIG.maxRentalMonths} meses.`);
+                    return;
+                }
+                
+                // Verificar se o usuário tem documentos cadastrados
+                if (!userProfile?.documents || userProfile.documents.length < 3) {
+                    alert('Você precisa ter pelo menos 3 documentos cadastrados no seu perfil para solicitar um aluguel.');
+                    return;
+                }
+                
+                // Verificar documentos enviados no formulário
+                const documentFiles = document.getElementById('rent-documents').files;
+                if (documentFiles.length === 0) {
+                    alert('É necessário enviar os documentos para solicitar o aluguel.');
+                    return;
+                }
+                
+                // Mostrar loading
+                const submitBtn = document.getElementById('submit-rent-btn');
+                const originalText = submitBtn.textContent;
+                submitBtn.innerHTML = '<div class="loading"></div> Enviando...';
+                submitBtn.disabled = true;
+                
+                // Calcular datas
                 const start = new Date(startDate);
                 const end = new Date(start);
                 end.setMonth(end.getMonth() + months);
@@ -3631,20 +4276,24 @@
                 const endDate = end.toISOString().split('T')[0];
                 const totalPrice = currentCarToRent.price * months;
                 
-                // Get uploaded documents
-                const documentFiles = document.getElementById('rent-documents').files;
-                const documentUrls = [];
-                
-                // Upload documents to Supabase Storage
+                // Upload de documentos adicionais
+                const additionalDocuments = [];
                 for (let file of documentFiles) {
                     const url = await uploadToSupabaseStorage(file, 'rental-documents');
-                    if (url) documentUrls.push(url);
+                    if (url) additionalDocuments.push(url);
                 }
                 
-                if (documentUrls.length === 0) {
-                    alert('É necessário enviar os documentos para solicitar o aluguel.');
-                    return;
-                }
+                // Criar contrato digital
+                const contractData = {
+                    car: currentCarToRent,
+                    tenant: userProfile,
+                    startDate: startDate,
+                    endDate: endDate,
+                    months: months,
+                    totalPrice: totalPrice
+                };
+                
+                const contractUrl = await generateContract(contractData);
                 
                 // Save rental request to Supabase
                 const { data: rental, error } = await supabase
@@ -3652,22 +4301,25 @@
                     .insert({
                         car_id: currentCarToRent.id,
                         tenant_id: currentUser.id,
-                        owner_id: currentCarToRent.owner_id,
+                        owner_id: 'owner1', // In real app, get from car
                         start_date: startDate,
                         end_date: endDate,
                         months: months,
                         total_price: totalPrice,
                         status: 'pending',
-                        tenant_documents: documentUrls,
+                        tenant_documents: [...(userProfile.documents || []), ...additionalDocuments],
+                        contract_url: contractUrl,
                         notes: notes,
-                        payment_status: 'pending'
+                        payment_status: 'pending',
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
                     })
                     .select()
                     .single();
                     
                 if (error) throw error;
                 
-                // Create payment records (monthly payments)
+                // Create payment records
                 const payments = [];
                 for (let i = 0; i < months; i++) {
                     const dueDate = new Date(start);
@@ -3676,12 +4328,26 @@
                     payments.push({
                         rental_id: rental.id,
                         user_id: currentUser.id,
-                        description: `Aluguel ${currentCarToRent.brand} ${currentCarToRent.model} - Mês ${i + 1}`,
+                        description: `Aluguel ${currentCarToRent.brand} ${currentCarToRent.model} - Mês ${i + 1}/${months}`,
                         amount: currentCarToRent.price,
                         due_date: dueDate.toISOString().split('T')[0],
-                        status: 'pending'
+                        status: i === 0 ? 'pending' : 'pending',
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
                     });
                 }
+                
+                // Adicionar caução
+                payments.push({
+                    rental_id: rental.id,
+                    user_id: currentUser.id,
+                    description: `Caução - ${currentCarToRent.brand} ${currentCarToRent.model}`,
+                    amount: currentCarToRent.price * 2,
+                    due_date: new Date().toISOString().split('T')[0],
+                    status: 'pending',
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                });
                 
                 // Insert payments
                 const { error: paymentsError } = await supabase
@@ -3690,26 +4356,15 @@
                     
                 if (paymentsError) throw paymentsError;
                 
-                // Send notification to car owner
+                // Notificar proprietário
                 await createNotification(
-                    currentCarToRent.owner_id,
+                    'owner1', // In real app, get from car
                     'Nova Solicitação de Aluguel',
-                    `${userProfile?.full_name || currentUser.email} solicitou aluguel do seu ${currentCarToRent.brand} ${currentCarToRent.model}.`,
+                    `${userProfile?.full_name || currentUser.email} solicitou aluguel do seu ${currentCarToRent.brand} ${currentCarToRent.model} por ${months} meses.`,
                     'info'
                 );
                 
-                // Send email notification to owner
-                await sendEmailNotification(
-                    currentCarToRent.profiles2?.email || '',
-                    'Nova Solicitação de Aluguel - CarRental Pro',
-                    `Olá,<br><br>Você recebeu uma nova solicitação de aluguel para seu ${currentCarToRent.brand} ${currentCarToRent.model}.<br><br>
-                    <strong>Locatário:</strong> ${userProfile?.full_name || currentUser.email}<br>
-                    <strong>Período:</strong> ${months} meses (${startDate} a ${endDate})<br>
-                    <strong>Valor Total:</strong> R$ ${totalPrice.toLocaleString()}<br><br>
-                    Acesse seu painel para aprovar ou rejeitar a solicitação.`
-                );
-                
-                // Create notification for tenant
+                // Notificar locatário
                 await createNotification(
                     currentUser.id,
                     'Solicitação Enviada',
@@ -3717,50 +4372,57 @@
                     'success'
                 );
                 
-                alert('Solicitação de aluguel enviada com sucesso! Agora aguarde a aprovação do proprietário.');
+                alert('Solicitação de aluguel enviada com sucesso! Você receberá uma notificação quando o proprietário analisar sua solicitação.');
                 
-                // Reset form and close modal
+                // Resetar formulário e fechar modal
                 rentCarForm.reset();
                 rentCarModal.style.display = 'none';
                 rentDocumentsPreview.innerHTML = '';
                 currentCarToRent = null;
                 
-                // Reload rentals list
+                // Restaurar botão
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+                
+                // Recarregar dados
                 loadMyRentals();
                 loadMyPayments();
                 
             } catch (error) {
                 console.error('Error requesting rental:', error);
                 alert('Erro ao solicitar aluguel: ' + error.message);
+                
+                // Restaurar botão em caso de erro
+                const submitBtn = document.getElementById('submit-rent-btn');
+                submitBtn.textContent = 'Solicitar Aluguel';
+                submitBtn.disabled = false;
             }
+        }
+        
+        async function generateContract(contractData) {
+            // Simulate contract generation
+            console.log('Generating contract with data:', contractData);
+            await new Promise(resolve => setTimeout(resolve, 500));
+            return `https://carrentalpro.com/contracts/${Date.now()}.pdf`;
         }
         
         // Payment Functions
         async function openPaymentModal(paymentId) {
             try {
-                // Fetch payment details
-                const { data: payment, error } = await supabase
-                    .from('payments')
-                    .select(`
-                        *,
-                        rentals!rental_id(cars!car_id(brand, model))
-                    `)
-                    .eq('id', paymentId)
-                    .single();
-                    
-                if (error) throw error;
-                
-                currentPayment = payment;
+                // In a real app, fetch payment details
+                currentPayment = {
+                    id: paymentId,
+                    description: 'Aluguel Toyota Corolla - Mês 1/6',
+                    amount: 1200,
+                    due_date: '2024-01-10'
+                };
                 
                 // Set payment info in modal
-                document.getElementById('payment-description').textContent = 
-                    payment.description || `Pagamento - ${payment.rentals?.cars?.brand || ''} ${payment.rentals?.cars?.model || ''}`;
-                document.getElementById('payment-amount').textContent = 
-                    `R$ ${payment.amount.toLocaleString()}`;
+                document.getElementById('payment-description').textContent = currentPayment.description;
+                document.getElementById('payment-amount').textContent = `R$ ${currentPayment.amount.toLocaleString()}`;
                 
-                const dueDate = new Date(payment.due_date).toLocaleDateString('pt-BR');
-                document.getElementById('payment-due-date').textContent = 
-                    `Vencimento: ${dueDate}`;
+                const dueDate = new Date(currentPayment.due_date).toLocaleDateString('pt-BR');
+                document.getElementById('payment-due-date').textContent = `Vencimento: ${dueDate}`;
                 
                 // Show modal
                 paymentModal.style.display = 'flex';
@@ -3779,6 +4441,15 @@
             try {
                 const paymentMethod = document.querySelector('input[name="payment-method"]:checked').value;
                 
+                // Mostrar loading
+                const submitBtn = document.getElementById('confirm-payment-btn');
+                const originalText = submitBtn.textContent;
+                submitBtn.innerHTML = '<div class="loading"></div> Processando...';
+                submitBtn.disabled = true;
+                
+                // Simulate payment processing
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                
                 // Update payment status in Supabase
                 const { error } = await supabase
                     .from('payments')
@@ -3790,34 +4461,6 @@
                     .eq('id', currentPayment.id);
                     
                 if (error) throw error;
-                
-                // Check if all payments for this rental are paid
-                const { data: rentalPayments, error: paymentsError } = await supabase
-                    .from('payments')
-                    .select('status')
-                    .eq('rental_id', currentPayment.rental_id);
-                    
-                if (paymentsError) throw paymentsError;
-                
-                const allPaid = rentalPayments.every(p => p.status === 'paid');
-                
-                // Update rental payment status
-                if (allPaid) {
-                    await supabase
-                        .from('rentals')
-                        .update({ payment_status: 'paid' })
-                        .eq('id', currentPayment.rental_id);
-                }
-                
-                // Send payment confirmation email
-                await sendEmailNotification(
-                    currentUser.email,
-                    'Pagamento Confirmado - CarRental Pro',
-                    `Seu pagamento de R$ ${currentPayment.amount.toLocaleString()} foi confirmado com sucesso.<br><br>
-                    <strong>Método:</strong> ${paymentMethod === 'credit-card' ? 'Cartão de Crédito' : paymentMethod === 'pix' ? 'PIX' : 'Boleto'}<br>
-                    <strong>Data:</strong> ${new Date().toLocaleDateString('pt-BR')}<br><br>
-                    Obrigado por utilizar o CarRental Pro!`
-                );
                 
                 // Create notification
                 await createNotification(
@@ -3833,6 +4476,10 @@
                 paymentModal.style.display = 'none';
                 currentPayment = null;
                 
+                // Restaurar botão
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+                
                 // Reload payments and rentals
                 loadMyPayments();
                 loadMyRentals();
@@ -3840,6 +4487,11 @@
             } catch (error) {
                 console.error('Error processing payment:', error);
                 alert('Erro ao processar pagamento: ' + error.message);
+                
+                // Restaurar botão em caso de erro
+                const submitBtn = document.getElementById('confirm-payment-btn');
+                submitBtn.textContent = 'Confirmar Pagamento';
+                submitBtn.disabled = false;
             }
         }
         
@@ -3848,7 +4500,6 @@
             currentRentalToReview = rentalId;
             
             // In a real app, fetch rental details
-            // For demo, set mock data
             document.getElementById('review-rental-info').textContent = 'Toyota Corolla • 6 meses';
             document.getElementById('review-rental-period').textContent = '01/10/2023 - 01/04/2024';
             
@@ -3900,18 +4551,29 @@
                     return;
                 }
                 
+                if (!title || !comment) {
+                    alert('Por favor, preencha o título e o comentário da avaliação.');
+                    return;
+                }
+                
+                // Mostrar loading
+                const submitBtn = document.getElementById('submit-review-btn');
+                const originalText = submitBtn.textContent;
+                submitBtn.innerHTML = '<div class="loading"></div> Enviando...';
+                submitBtn.disabled = true;
+                
                 // Save review to Supabase
                 const { error } = await supabase
                     .from('reviews')
                     .insert({
                         rental_id: currentRentalToReview,
                         reviewer_id: currentUser.id,
-                        reviewee_id: currentCarToRent?.owner_id || currentUser.id, // In real app, get from rental
+                        reviewee_id: 'owner1', // In real app, get from rental
                         rating: rating,
                         title: title,
                         comment: comment,
                         recommend: recommend === 'yes',
-                        car_id: currentCarToRent?.id || null
+                        created_at: new Date().toISOString()
                     });
                     
                 if (error) throw error;
@@ -3929,16 +4591,25 @@
                 reviewForm.reset();
                 currentRentalToReview = null;
                 
+                // Restaurar botão
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+                
                 // Reload reviews
                 loadMyReviews();
                 
             } catch (error) {
                 console.error('Error submitting review:', error);
                 alert('Erro ao enviar avaliação: ' + error.message);
+                
+                // Restaurar botão em caso de erro
+                const submitBtn = document.getElementById('submit-review-btn');
+                submitBtn.textContent = 'Enviar Avaliação';
+                submitBtn.disabled = false;
             }
         }
         
-        // Rental Management Functions (for owners)
+        // Rental Management Functions
         async function approveRental(rentalId) {
             if (!confirm('Tem certeza que deseja aprovar esta solicitação de aluguel?')) return;
             
@@ -3955,47 +4626,17 @@
                 if (error) throw error;
                 
                 // Update car status to rented
-                const { data: rental } = await supabase
-                    .from('rentals')
-                    .select('car_id')
-                    .eq('id', rentalId)
-                    .single();
-                    
-                if (rental) {
-                    await supabase
-                        .from('cars')
-                        .update({ status: 'rented' })
-                        .eq('id', rental.car_id);
-                }
-                
-                // Get tenant info for notification
-                const { data: rentalWithTenant } = await supabase
-                    .from('rentals')
-                    .select(`
-                        *,
-                        profiles2!rentals_tenant_id_fkey(full_name, email)
-                    `)
-                    .eq('id', rentalId)
-                    .single();
+                await supabase
+                    .from('cars')
+                    .update({ status: 'rented' })
+                    .eq('id', '1'); // In real app, get from rental
                 
                 // Send notification to tenant
                 await createNotification(
-                    rentalWithTenant.tenant_id,
+                    'tenant1', // In real app, get from rental
                     'Solicitação Aprovada',
                     'Sua solicitação de aluguel foi aprovada pelo proprietário.',
                     'success'
-                );
-                
-                // Send email to tenant
-                await sendEmailNotification(
-                    rentalWithTenant.profiles2?.email || '',
-                    'Solicitação de Aluguel Aprovada - CarRental Pro',
-                    `Parabéns! Sua solicitação de aluguel foi aprovada pelo proprietário.<br><br>
-                    <strong>Próximos passos:</strong><br>
-                    1. Realize o pagamento da primeira parcela<br>
-                    2. Combine a retirada do veículo com o proprietário<br>
-                    3. Assine o contrato digital<br><br>
-                    Acesse seu painel para mais detalhes.`
                 );
                 
                 alert('Solicitação aprovada com sucesso!');
@@ -4025,19 +4666,9 @@
                     
                 if (error) throw error;
                 
-                // Get tenant info for notification
-                const { data: rentalWithTenant } = await supabase
-                    .from('rentals')
-                    .select(`
-                        *,
-                        profiles2!rentals_tenant_id_fkey(full_name, email)
-                    `)
-                    .eq('id', rentalId)
-                    .single();
-                
                 // Send notification to tenant
                 await createNotification(
-                    rentalWithTenant.tenant_id,
+                    'tenant1', // In real app, get from rental
                     'Solicitação Rejeitada',
                     `Sua solicitação de aluguel foi rejeitada. Motivo: ${reason}`,
                     'warning'
@@ -4066,22 +4697,11 @@
                     
                 if (error) throw error;
                 
-                // Get owner info for notification
-                const { data: rentalWithOwner } = await supabase
-                    .from('rentals')
-                    .select(`
-                        *,
-                        profiles2!rentals_owner_id_fkey(full_name, email),
-                        cars!car_id(brand, model)
-                    `)
-                    .eq('id', rentalId)
-                    .single();
-                
                 // Send notification to owner
                 await createNotification(
-                    rentalWithOwner.owner_id,
+                    'owner1', // In real app, get from rental
                     'Solicitação Cancelada',
-                    `A solicitação de aluguel para seu ${rentalWithOwner.cars?.brand} ${rentalWithOwner.cars?.model} foi cancelada pelo locatário.`,
+                    'A solicitação de aluguel foi cancelada pelo locatário.',
                     'info'
                 );
                 
@@ -4094,6 +4714,374 @@
                 console.error('Error cancelling rental:', error);
                 alert('Erro ao cancelar solicitação: ' + error.message);
             }
+        }
+        
+        // View Functions
+        async function viewCarDetails(carId, isOwner = false) {
+            try {
+                // In a real app, fetch car details from Supabase
+                const car = {
+                    id: carId,
+                    brand: 'Toyota',
+                    model: 'Corolla',
+                    year: 2022,
+                    color: 'Prata',
+                    plate: 'ABC1234',
+                    price: 1200,
+                    km: 15000,
+                    fuel: 'flex',
+                    transmission: 'automático',
+                    doors: 4,
+                    description: 'Carro em excelente estado, com ar condicionado, câmbio automático e baixa quilometragem. Manutenção em dia e seguro completo.',
+                    features: ['air-conditioning', 'automatic', 'airbags', 'bluetooth', 'reverse-camera'],
+                    images: [],
+                    status: 'available',
+                    profiles2: {
+                        full_name: 'João Silva',
+                        phone: '(11) 99999-9999',
+                        rating: 4.8
+                    },
+                    reviews: [
+                        {
+                            rating: 5,
+                            comment: 'Excelente carro e proprietário muito atencioso!',
+                            title: 'Perfeito!',
+                            created_at: '2023-10-15',
+                            profiles2: { full_name: 'Maria Santos' }
+                        },
+                        {
+                            rating: 4,
+                            comment: 'Carro muito bom, econômico e confortável.',
+                            title: 'Ótima experiência',
+                            created_at: '2023-09-20',
+                            profiles2: { full_name: 'Carlos Oliveira' }
+                        }
+                    ],
+                    rentals: [
+                        {
+                            status: 'completed',
+                            start_date: '2023-05-01',
+                            end_date: '2023-11-01',
+                            profiles2: { full_name: 'Ana Paula' }
+                        }
+                    ]
+                };
+                
+                // Calcular estatísticas
+                const avgRating = car.reviews?.length > 0 
+                    ? car.reviews.reduce((sum, r) => sum + r.rating, 0) / car.reviews.length 
+                    : 0;
+                
+                // Criar modal de detalhes
+                const modalHTML = `
+                    <div class="modal" id="car-details-modal">
+                        <div class="modal-content" style="max-width: 800px;">
+                            <div class="modal-header">
+                                <h2>${car.brand} ${car.model} (${car.year})</h2>
+                                <button class="close-modal" onclick="document.getElementById('car-details-modal').style.display='none'">&times;</button>
+                            </div>
+                            <div class="modal-body">
+                                <!-- Galeria de imagens -->
+                                <div style="margin-bottom: 30px;">
+                                    <div id="car-images-gallery" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                                        ${car.images && car.images.length > 0 
+                                            ? car.images.map((img, index) => `
+                                                <img src="${img}" alt="Foto ${index + 1}" 
+                                                     style="width: 100%; height: 120px; object-fit: cover; border-radius: 8px; cursor: pointer;"
+                                                     onclick="openImageModal('${img}')">
+                                            `).join('')
+                                            : `
+                                            <div style="width: 100%; height: 120px; background: var(--light-gray); border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--gray);">
+                                                <i class="fas fa-car" style="font-size: 40px; margin-bottom: 10px;"></i>
+                                                <span>Sem imagens</span>
+                                            </div>
+                                            `
+                                        }
+                                    </div>
+                                </div>
+                                
+                                <!-- Informações principais -->
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px;">
+                                    <div>
+                                        <h3 style="margin-bottom: 15px;">Informações do Veículo</h3>
+                                        <div style="background: #f8fafc; padding: 20px; border-radius: var(--border-radius);">
+                                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                                <span style="color: var(--gray);">Marca/Modelo:</span>
+                                                <span style="font-weight: 600;">${car.brand} ${car.model}</span>
+                                            </div>
+                                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                                <span style="color: var(--gray);">Ano:</span>
+                                                <span style="font-weight: 600;">${car.year}</span>
+                                            </div>
+                                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                                <span style="color: var(--gray);">Cor:</span>
+                                                <span style="font-weight: 600;">${car.color}</span>
+                                            </div>
+                                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                                <span style="color: var(--gray);">Placa:</span>
+                                                <span style="font-weight: 600;">${car.plate}</span>
+                                            </div>
+                                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                                <span style="color: var(--gray);">Quilometragem:</span>
+                                                <span style="font-weight: 600;">${car.km.toLocaleString()} km</span>
+                                            </div>
+                                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                                <span style="color: var(--gray);">Combustível:</span>
+                                                <span style="font-weight: 600;">${car.fuel === 'flex' ? 'Flex' : car.fuel === 'gasoline' ? 'Gasolina' : car.fuel === 'ethanol' ? 'Etanol' : car.fuel}</span>
+                                            </div>
+                                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                                <span style="color: var(--gray);">Câmbio:</span>
+                                                <span style="font-weight: 600;">${car.transmission}</span>
+                                            </div>
+                                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                                <span style="color: var(--gray);">Portas:</span>
+                                                <span style="font-weight: 600;">${car.doors}</span>
+                                            </div>
+                                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                                <span style="color: var(--gray);">Preço:</span>
+                                                <span class="card-price" style="margin-bottom: 0; font-size: 18px;">R$ ${car.price.toLocaleString()}<small>/mês</small></span>
+                                            </div>
+                                            <div style="display: flex; justify-content: space-between;">
+                                                <span style="color: var(--gray);">Status:</span>
+                                                <span class="status-badge ${car.status === 'available' ? 'status-available' : 'status-rented'}">
+                                                    ${car.status === 'available' ? 'Disponível' : 'Alugado'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div>
+                                        <h3 style="margin-bottom: 15px;">Proprietário</h3>
+                                        <div style="background: #f8fafc; padding: 20px; border-radius: var(--border-radius);">
+                                            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                                                <div class="user-avatar" style="width: 50px; height: 50px;">
+                                                    ${car.profiles2?.full_name?.charAt(0).toUpperCase() || 'P'}
+                                                </div>
+                                                <div>
+                                                    <div style="font-weight: 600;">${car.profiles2?.full_name || 'Proprietário'}</div>
+                                                    <div style="color: var(--gray); font-size: 14px;">
+                                                        <i class="fas fa-star" style="color: #ffc107;"></i> 
+                                                        ${car.profiles2?.rating?.toFixed(1) || 'Novo'}
+                                                    </div>
+                                                    <div style="color: var(--gray); font-size: 14px;">
+                                                        <i class="fas fa-phone"></i> ${car.profiles2?.phone || 'Não informado'}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            ${isOwner ? `
+                                                <div style="margin-top: 15px;">
+                                                    <button class="btn btn-outline btn-sm" onclick="editCar('${car.id}')">
+                                                        <i class="fas fa-edit"></i> Editar Carro
+                                                    </button>
+                                                </div>
+                                            ` : ''}
+                                        </div>
+                                        
+                                        <h3 style="margin-bottom: 15px; margin-top: 25px;">Avaliação</h3>
+                                        <div style="background: #f8fafc; padding: 20px; border-radius: var(--border-radius); text-align: center;">
+                                            <div style="font-size: 36px; font-weight: 700; color: var(--primary); margin-bottom: 5px;">
+                                                ${avgRating.toFixed(1)}
+                                            </div>
+                                            <div class="rating-stars" style="justify-content: center; margin-bottom: 10px;">
+                                                ${[1,2,3,4,5].map(star => `
+                                                    <i class="fas fa-star ${star <= Math.round(avgRating) ? 'filled' : ''}"></i>
+                                                `).join('')}
+                                            </div>
+                                            <div style="color: var(--gray);">
+                                                Baseado em ${car.reviews?.length || 0} avaliações
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Descrição -->
+                                <div style="margin-bottom: 30px;">
+                                    <h3 style="margin-bottom: 15px;">Descrição</h3>
+                                    <div style="background: #f8fafc; padding: 20px; border-radius: var(--border-radius);">
+                                        <p style="line-height: 1.6;">${car.description || 'Sem descrição disponível.'}</p>
+                                    </div>
+                                </div>
+                                
+                                <!-- Características -->
+                                ${car.features?.length > 0 ? `
+                                    <div style="margin-bottom: 30px;">
+                                        <h3 style="margin-bottom: 15px;">Características</h3>
+                                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;">
+                                            ${car.features.map(feature => {
+                                                const featureNames = {
+                                                    'air-conditioning': 'Ar Condicionado',
+                                                    'automatic': 'Automático',
+                                                    'airbags': 'Airbags',
+                                                    'bluetooth': 'Bluetooth',
+                                                    'gps': 'GPS',
+                                                    'reverse-camera': 'Câmera de Ré',
+                                                    'alarm': 'Alarme',
+                                                    'abs': 'ABS',
+                                                    'airbag-passenger': 'Airbag Passageiro',
+                                                    'central-lock': 'Trava Central'
+                                                };
+                                                return `
+                                                    <div style="display: flex; align-items: center; gap: 10px; padding: 10px; background: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                                                        <i class="fas fa-check" style="color: #10b981;"></i>
+                                                        <span>${featureNames[feature] || feature}</span>
+                                                    </div>
+                                                `;
+                                            }).join('')}
+                                        </div>
+                                    </div>
+                                ` : ''}
+                                
+                                <!-- Avaliações -->
+                                ${car.reviews?.length > 0 ? `
+                                    <div>
+                                        <h3 style="margin-bottom: 15px;">Avaliações</h3>
+                                        <div style="max-height: 300px; overflow-y: auto; padding-right: 10px;">
+                                            ${car.reviews.map(review => `
+                                                <div style="background: white; padding: 20px; border-radius: var(--border-radius); box-shadow: var(--box-shadow); margin-bottom: 15px;">
+                                                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                                                        <div>
+                                                            <div style="font-weight: 600; margin-bottom: 5px;">${review.profiles2?.full_name || 'Usuário'}</div>
+                                                            <div class="rating-stars">
+                                                                ${[1,2,3,4,5].map(star => `
+                                                                    <i class="fas fa-star ${star <= review.rating ? 'filled' : ''}"></i>
+                                                                `).join('')}
+                                                            </div>
+                                                        </div>
+                                                        <div style="font-size: 14px; color: var(--gray);">
+                                                            ${new Date(review.created_at).toLocaleDateString('pt-BR')}
+                                                        </div>
+                                                    </div>
+                                                    <div style="font-weight: 600; margin-bottom: 10px; color: var(--dark);">${review.title}</div>
+                                                    <p style="color: var(--gray); line-height: 1.6;">${review.comment}</p>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                ` : ''}
+                            </div>
+                            
+                            <div class="modal-footer">
+                                ${!isOwner && car.status === 'available' && currentUser ? `
+                                    <button class="btn btn-primary" onclick="openRentModal('${car.id}')">
+                                        <i class="fas fa-calendar-check"></i> Alugar Este Carro
+                                    </button>
+                                ` : ''}
+                                <button class="btn btn-outline" onclick="document.getElementById('car-details-modal').style.display='none'">
+                                    Fechar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Adicionar modal ao DOM
+                const existingModal = document.getElementById('car-details-modal');
+                if (existingModal) {
+                    existingModal.remove();
+                }
+                
+                document.body.insertAdjacentHTML('beforeend', modalHTML);
+                
+                // Add close button functionality
+                document.querySelector('#car-details-modal .close-modal').addEventListener('click', function() {
+                    document.getElementById('car-details-modal').style.display = 'none';
+                });
+                
+                // Show modal
+                document.getElementById('car-details-modal').style.display = 'flex';
+                
+            } catch (error) {
+                console.error('Error loading car details:', error);
+                alert('Erro ao carregar detalhes do carro.');
+            }
+        }
+        
+        function openImageModal(imageUrl) {
+            const modalHTML = `
+                <div class="modal" id="image-modal" style="background-color: rgba(0,0,0,0.9);">
+                    <div class="modal-content" style="background: transparent; box-shadow: none; max-width: 90vw; max-height: 90vh;">
+                        <div class="modal-header" style="background: transparent; border: none; justify-content: flex-end;">
+                            <button class="close-modal" style="color: white; font-size: 36px;" onclick="document.getElementById('image-modal').style.display='none'">&times;</button>
+                        </div>
+                        <div class="modal-body" style="display: flex; justify-content: center; align-items: center; padding: 0;">
+                            <img src="${imageUrl}" alt="Imagem ampliada" style="max-width: 100%; max-height: 80vh; object-fit: contain;">
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            const existingModal = document.getElementById('image-modal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+            
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+            document.getElementById('image-modal').style.display = 'flex';
+        }
+        
+        async function viewRentalRequests(carId) {
+            try {
+                // In a real app, fetch rental requests from Supabase
+                // For demo, show message
+                alert('Em uma aplicação completa, você veria aqui todas as solicitações de aluguel pendentes para este carro, com opções para aprovar ou rejeitar.');
+                
+            } catch (error) {
+                console.error('Error loading rental requests:', error);
+                alert('Erro ao carregar solicitações de aluguel.');
+            }
+        }
+        
+        function viewRentalDetails(rentalId) {
+            alert(`Detalhes da locação ${rentalId}. Em uma aplicação completa, você veria informações detalhadas sobre a locação.`);
+        }
+        
+        function viewPaymentDetails(paymentId) {
+            alert(`Detalhes do pagamento ${paymentId}. Em uma aplicação completa, você veria o comprovante e informações detalhadas.`);
+        }
+        
+        // Filter Functions
+        async function applyAdvancedFilters(e) {
+            e.preventDefault();
+            
+            try {
+                const minPrice = document.getElementById('min-price').value;
+                const maxPrice = document.getElementById('max-price').value;
+                const minYear = document.getElementById('min-year').value;
+                const maxYear = document.getElementById('max-year').value;
+                const brand = document.getElementById('filter-brand').value;
+                const location = document.getElementById('filter-location').value;
+                
+                const selectedFeatures = [];
+                document.querySelectorAll('input[name="filter-features"]:checked').forEach(cb => {
+                    selectedFeatures.push(cb.value);
+                });
+                
+                // In a real app, you would make an API call with filters
+                // For demo, just show a message
+                let filterMessage = 'Filtros aplicados:\n';
+                if (minPrice) filterMessage += `• Preço mínimo: R$ ${minPrice}\n`;
+                if (maxPrice) filterMessage += `• Preço máximo: R$ ${maxPrice}\n`;
+                if (minYear) filterMessage += `• Ano mínimo: ${minYear}\n`;
+                if (maxYear) filterMessage += `• Ano máximo: ${maxYear}\n`;
+                if (brand) filterMessage += `• Marca: ${brand}\n`;
+                if (location) filterMessage += `• Localização: ${location}\n`;
+                if (selectedFeatures.length > 0) filterMessage += `• Características: ${selectedFeatures.join(', ')}\n`;
+                
+                alert(filterMessage + '\nEm uma aplicação completa, os carros seriam filtrados conforme os critérios.');
+                
+                // Close modal
+                filterModal.style.display = 'none';
+                
+            } catch (error) {
+                console.error('Error applying filters:', error);
+                alert('Erro ao aplicar filtros.');
+            }
+        }
+        
+        function clearFilters() {
+            document.getElementById('advanced-filter-form').reset();
+            loadAvailableCars();
+            filterModal.style.display = 'none';
         }
         
         // Utility Functions
@@ -4110,6 +5098,7 @@
         function copyToClipboard(elementId) {
             const element = document.getElementById(elementId);
             element.select();
+            element.setSelectionRange(0, 99999); // For mobile devices
             document.execCommand('copy');
             alert('Copiado para a área de transferência!');
         }
@@ -4128,131 +5117,43 @@
             return date.toLocaleDateString('pt-BR');
         }
         
-        // These functions would be implemented in a full application
-        function viewCarDetails(carId, isOwner = false) {
-            alert(`Visualizando detalhes do carro ${carId}. Em uma aplicação completa, você veria informações detalhadas, fotos e histórico do carro.`);
+        function isValidEmail(email) {
+            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return re.test(email);
         }
         
-        function viewRentalRequests(carId) {
-            alert(`Visualizando solicitações para o carro ${carId}. Como proprietário, você pode aprovar ou rejeitar solicitações de aluguel.`);
-        }
-        
-        function viewRentalDetails(rentalId) {
-            alert(`Visualizando detalhes da locação ${rentalId}.`);
-        }
-        
-        function viewPaymentDetails(paymentId) {
-            alert(`Visualizando detalhes do pagamento ${paymentId}.`);
-        }
-        
-        function editCar(carId) {
-            alert(`Editando carro ${carId}.`);
-        }
-        
-        // RLS Policies (to be created in Supabase SQL editor)
-        /*
-        -- Enable RLS on all tables
-        ALTER TABLE profiles2 ENABLE ROW LEVEL SECURITY;
-        ALTER TABLE cars ENABLE ROW LEVEL SECURITY;
-        ALTER TABLE rentals ENABLE ROW LEVEL SECURITY;
-        ALTER TABLE payments ENABLE ROW LEVEL SECURITY;
-        ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
-        ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
-        
-        -- profiles2 policies
-        CREATE POLICY "Users can view own profile" ON profiles2
-            FOR SELECT USING (auth.uid() = id);
-        
-        CREATE POLICY "Users can update own profile" ON profiles2
-            FOR UPDATE USING (auth.uid() = id);
-        
-        -- Cars policies
-        CREATE POLICY "Anyone can view available cars" ON cars
-            FOR SELECT USING (status = 'available');
-        
-        CREATE POLICY "Users can view their own cars" ON cars
-            FOR SELECT USING (auth.uid() = owner_id);
-        
-        CREATE POLICY "Owners can insert their own cars" ON cars
-            FOR INSERT WITH CHECK (auth.uid() = owner_id);
-        
-        CREATE POLICY "Owners can update their own cars" ON cars
-            FOR UPDATE USING (auth.uid() = owner_id);
-        
-        -- Rentals policies
-        CREATE POLICY "Users can view their own rentals" ON rentals
-            FOR SELECT USING (auth.uid() = tenant_id OR auth.uid() = owner_id);
-        
-        CREATE POLICY "Tenants can insert rentals" ON rentals
-            FOR INSERT WITH CHECK (auth.uid() = tenant_id);
-        
-        CREATE POLICY "Owners can update their own car rentals" ON rentals
-            FOR UPDATE USING (auth.uid() = owner_id);
-        
-        -- Payments policies
-        CREATE POLICY "Users can view their own payments" ON payments
-            FOR SELECT USING (auth.uid() = user_id);
-        
-        CREATE POLICY "Users can update their own payments" ON payments
-            FOR UPDATE USING (auth.uid() = user_id);
-        
-        -- Reviews policies
-        CREATE POLICY "Anyone can view reviews" ON reviews
-            FOR SELECT USING (true);
-        
-        CREATE POLICY "Users can insert their own reviews" ON reviews
-            FOR INSERT WITH CHECK (auth.uid() = reviewer_id);
-        
-        -- Notifications policies
-        CREATE POLICY "Users can view their own notifications" ON notifications
-            FOR SELECT USING (auth.uid() = user_id);
-        
-        CREATE POLICY "Users can update their own notifications" ON notifications
-            FOR UPDATE USING (auth.uid() = user_id);
-        */
-        
-        // Backend Validations (using Supabase Edge Functions or database triggers)
-        /*
-        -- Example trigger to validate rental period
-        CREATE OR REPLACE FUNCTION validate_rental_period()
-        RETURNS TRIGGER AS $$
-        BEGIN
-            IF NEW.months < 6 THEN
-                RAISE EXCEPTION 'Período mínimo de aluguel é 6 meses';
-            END IF;
-            RETURN NEW;
-        END;
-        $$ LANGUAGE plpgsql;
-        
-        CREATE TRIGGER check_rental_period
-            BEFORE INSERT OR UPDATE ON rentals
-            FOR EACH ROW
-            EXECUTE FUNCTION validate_rental_period();
-        
-        -- Example trigger to validate user documents before rental
-        CREATE OR REPLACE FUNCTION validate_user_documents()
-        RETURNS TRIGGER AS $$
-        DECLARE
-            doc_count INTEGER;
-        BEGIN
-            SELECT COUNT(*) INTO doc_count
-            FROM profiles2
-            WHERE id = NEW.tenant_id
-            AND documents IS NOT NULL
-            AND array_length(documents, 1) >= 3;
+        function isValidCPF(cpf) {
+            cpf = cpf.replace(/[^\d]/g, '');
             
-            IF doc_count = 0 THEN
-                RAISE EXCEPTION 'Usuário precisa ter pelo menos 3 documentos cadastrados';
-            END IF;
-            RETURN NEW;
-        END;
-        $$ LANGUAGE plpgsql;
+            if (cpf.length !== 11) return false;
+            
+            // Validação simples de CPF (para demo)
+            // Em produção, usar algoritmo completo
+            if (/^(\d)\1{10}$/.test(cpf)) return false;
+            
+            return true;
+        }
         
-        CREATE TRIGGER check_user_documents
-            BEFORE INSERT ON rentals
-            FOR EACH ROW
-            EXECUTE FUNCTION validate_user_documents();
-        */
+        // Make functions available globally for onclick handlers
+        window.copyToClipboard = copyToClipboard;
+        window.viewCarDetails = viewCarDetails;
+        window.viewRentalRequests = viewRentalRequests;
+        window.openRentModal = openRentModal;
+        window.openImageModal = openImageModal;
+        window.showAuthModal = showAuthModal;
+        window.clearFilters = clearFilters;
+        window.markNotificationAsRead = markNotificationAsRead;
+        window.removeCarImage = removeCarImage;
+        window.removeFilePreview = removeFilePreview;
+        window.editCar = editCar;
+        window.approveRental = approveRental;
+        window.rejectRental = rejectRental;
+        window.cancelRentalRequest = cancelRentalRequest;
+        window.openReviewModal = openReviewModal;
+        window.openPaymentModal = openPaymentModal;
+        window.viewRentalDetails = viewRentalDetails;
+        window.viewPaymentDetails = viewPaymentDetails;
+        
     </script>
 </body>
 </html>
