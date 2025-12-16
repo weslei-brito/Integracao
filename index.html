@@ -2199,7 +2199,7 @@
         async function loadUserProfile(userId) {
             try {
                 const { data, error } = await supabase
-                    .from('profiles')
+                    .from('profiles2')
                     .select('*')
                     .eq('id', userId)
                     .single();
@@ -2248,7 +2248,7 @@
         
         async function createDefaultProfile(userId) {
             const { error } = await supabase
-                .from('profiles')
+                .from('profiles2')
                 .insert({
                     id: userId,
                     full_name: currentUser.email.split('@')[0],
@@ -2287,7 +2287,7 @@
                 }
                 
                 const { error } = await supabase
-                    .from('profiles')
+                    .from('profiles2')
                     .upsert({
                         id: currentUser.id,
                         full_name: fullName,
@@ -2358,7 +2358,7 @@
                     
                     // Create user profile
                     await supabase
-                        .from('profiles')
+                        .from('profiles2')
                         .insert({
                             id: data.user.id,
                             full_name: fullName,
@@ -2828,7 +2828,7 @@
                     .from('cars')
                     .select(`
                         *,
-                        profiles!cars_owner_id_fkey(full_name),
+                        profiles2!cars_owner_id_fkey(full_name),
                         reviews!car_id(rating)
                     `)
                     .eq('status', 'available')
@@ -2866,7 +2866,7 @@
                                 <div class="card-details">
                                     <span><i class="fas fa-calendar"></i> ${car.year}</span>
                                     <span><i class="fas fa-palette"></i> ${car.color}</span>
-                                    <span><i class="fas fa-user"></i> ${car.profiles?.full_name || 'Proprietário'}</span>
+                                    <span><i class="fas fa-user"></i> ${car.profiles2?.full_name || 'Proprietário'}</span>
                                 </div>
                                 <div class="card-price">R$ ${car.price.toLocaleString()}<small>/mês</small></div>
                                 <p class="card-description">${car.description || 'Carro em ótimo estado para aluguel.'}</p>
@@ -2909,7 +2909,7 @@
                     .from('cars')
                     .select(`
                         *,
-                        profiles!cars_owner_id_fkey(full_name),
+                        profiles2!cars_owner_id_fkey(full_name),
                         reviews!car_id(rating)
                     `)
                     .eq('status', 'available')
@@ -2955,7 +2955,7 @@
                             <div class="card-details">
                                 <span><i class="fas fa-calendar"></i> ${car.year}</span>
                                 <span><i class="fas fa-palette"></i> ${car.color}</span>
-                                <span><i class="fas fa-user"></i> ${car.profiles?.full_name || 'Proprietário'}</span>
+                                <span><i class="fas fa-user"></i> ${car.profiles2?.full_name || 'Proprietário'}</span>
                             </div>
                             <div class="card-price">R$ ${car.price.toLocaleString()}<small>/mês</small></div>
                             <p class="card-description">${car.description || 'Carro em ótimo estado para aluguel.'}</p>
@@ -3142,7 +3142,7 @@
                     .select(`
                         *,
                         cars!car_id(brand, model, year, images),
-                        profiles!rentals_owner_id_fkey(full_name)
+                        profiles2!rentals_owner_id_fkey(full_name)
                     `)
                     .or(`tenant_id.eq.${currentUser.id},owner_id.eq.${currentUser.id}`)
                     .order('created_at', { ascending: false });
@@ -3198,7 +3198,7 @@
                     <tr>
                         <td>
                             <div style="font-weight: 600;">${carInfo}</div>
-                            <div style="font-size: 14px; color: var(--gray);">${isOwner ? 'Locatário' : 'Proprietário'}: ${rental.profiles?.full_name || 'N/A'}</div>
+                            <div style="font-size: 14px; color: var(--gray);">${isOwner ? 'Locatário' : 'Proprietário'}: ${rental.profiles2?.full_name || 'N/A'}</div>
                         </td>
                         <td>
                             <div>${startDate} a ${endDate}</div>
@@ -3554,7 +3554,7 @@
                     .from('cars')
                     .select(`
                         *,
-                        profiles!cars_owner_id_fkey(full_name)
+                        profiles2!cars_owner_id_fkey(full_name)
                     `)
                     .eq('id', carId)
                     .single();
@@ -3695,7 +3695,7 @@
                 
                 // Send email notification to owner
                 await sendEmailNotification(
-                    currentCarToRent.profiles?.email || '',
+                    currentCarToRent.profiles2?.email || '',
                     'Nova Solicitação de Aluguel - CarRental Pro',
                     `Olá,<br><br>Você recebeu uma nova solicitação de aluguel para seu ${currentCarToRent.brand} ${currentCarToRent.model}.<br><br>
                     <strong>Locatário:</strong> ${userProfile?.full_name || currentUser.email}<br>
@@ -3968,7 +3968,7 @@
                     .from('rentals')
                     .select(`
                         *,
-                        profiles!rentals_tenant_id_fkey(full_name, email)
+                        profiles2!rentals_tenant_id_fkey(full_name, email)
                     `)
                     .eq('id', rentalId)
                     .single();
@@ -3983,7 +3983,7 @@
                 
                 // Send email to tenant
                 await sendEmailNotification(
-                    rentalWithTenant.profiles?.email || '',
+                    rentalWithTenant.profiles2?.email || '',
                     'Solicitação de Aluguel Aprovada - CarRental Pro',
                     `Parabéns! Sua solicitação de aluguel foi aprovada pelo proprietário.<br><br>
                     <strong>Próximos passos:</strong><br>
@@ -4025,7 +4025,7 @@
                     .from('rentals')
                     .select(`
                         *,
-                        profiles!rentals_tenant_id_fkey(full_name, email)
+                        profiles2!rentals_tenant_id_fkey(full_name, email)
                     `)
                     .eq('id', rentalId)
                     .single();
@@ -4066,7 +4066,7 @@
                     .from('rentals')
                     .select(`
                         *,
-                        profiles!rentals_owner_id_fkey(full_name, email),
+                        profiles2!rentals_owner_id_fkey(full_name, email),
                         cars!car_id(brand, model)
                     `)
                     .eq('id', rentalId)
@@ -4147,18 +4147,18 @@
         // RLS Policies (to be created in Supabase SQL editor)
         /*
         -- Enable RLS on all tables
-        ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+        ALTER TABLE profiles2 ENABLE ROW LEVEL SECURITY;
         ALTER TABLE cars ENABLE ROW LEVEL SECURITY;
         ALTER TABLE rentals ENABLE ROW LEVEL SECURITY;
         ALTER TABLE payments ENABLE ROW LEVEL SECURITY;
         ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
         ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
         
-        -- Profiles policies
-        CREATE POLICY "Users can view own profile" ON profiles
+        -- profiles2 policies
+        CREATE POLICY "Users can view own profile" ON profiles2
             FOR SELECT USING (auth.uid() = id);
         
-        CREATE POLICY "Users can update own profile" ON profiles
+        CREATE POLICY "Users can update own profile" ON profiles2
             FOR UPDATE USING (auth.uid() = id);
         
         -- Cars policies
@@ -4231,7 +4231,7 @@
             doc_count INTEGER;
         BEGIN
             SELECT COUNT(*) INTO doc_count
-            FROM profiles
+            FROM profiles2
             WHERE id = NEW.tenant_id
             AND documents IS NOT NULL
             AND array_length(documents, 1) >= 3;
