@@ -790,9 +790,9 @@
                 <div class="nav-links">
                     <a href="#" id="home-link" class="active">Início</a>
                     <a href="#" id="cars-link">Veículos</a>
-                    <a href="#" id="dashboard-link">Painel</a>
+                    <a href="#" id="dashboard-link" style="display: none;">Painel</a>
                     <div class="user-info" id="user-info" style="display: none;">
-                        <div class="user-avatar notification-badge" id="user-avatar">U</div>
+                        <div class="user-avatar" id="user-avatar">U</div>
                         <span id="user-name">Usuário</span>
                     </div>
                     <button class="btn btn-outline" id="logout-btn" style="display: none;">Sair</button>
@@ -873,7 +873,6 @@
                 </div>
                 <div class="tab" data-tab="payments">
                     <i class="fas fa-credit-card"></i> Pagamentos
-                    <span class="tab-badge" id="payments-count">0</span>
                 </div>
                 <div class="tab" data-tab="reviews">
                     <i class="fas fa-star"></i> Avaliações
@@ -1637,6 +1636,15 @@
             document.getElementById('filter-btn').addEventListener('click', () => {
                 alert('Funcionalidade de filtros avançados em desenvolvimento');
             });
+            
+            // Tab filters
+            document.querySelectorAll('[data-rental-filter]').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('[data-rental-filter]').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    loadMyRentals();
+                });
+            });
         }
         
         function generateYearOptions() {
@@ -1774,12 +1782,6 @@
             }
             
             try {
-                // Verificar se é proprietário
-                if (userProfile.user_type !== 'owner') {
-                    alert('Apenas proprietários podem cadastrar veículos.');
-                    return;
-                }
-                
                 // Coletar dados
                 const vehicleType = document.querySelector('input[name="vehicle-type"]:checked').value;
                 const brand = document.getElementById('vehicle-brand').value.trim();
@@ -1841,7 +1843,7 @@
                     .from('vehicles')
                     .select('id')
                     .eq('plate', plate)
-                    .single();
+                    .maybeSingle();
                 
                 if (existingVehicle) {
                     alert('Já existe um veículo com esta placa.');
@@ -1859,11 +1861,6 @@
                     console.error('Erro ao cadastrar veículo:', error);
                     alert('Erro ao cadastrar veículo: ' + error.message);
                     return;
-                }
-                
-                // Upload de imagens (simulação)
-                if (vehicleImages.length > 0) {
-                    console.log(`${vehicleImages.length} imagens para upload`);
                 }
                 
                 alert('Veículo cadastrado com sucesso!');
@@ -1956,13 +1953,20 @@
                     return;
                 }
                 
-                alert('Solicitação de aluguel enviada com sucesso!');
+                // Atualizar status do veículo
+                await supabase
+                    .from('vehicles')
+                    .update({ status: 'rented' })
+                    .eq('id', currentVehicleToRent.id);
+                
+                alert('Solicitação de aluguel enviada com sucesso! Aguarde aprovação do proprietário.');
                 document.getElementById('rent-vehicle-modal').style.display = 'none';
                 document.getElementById('rent-vehicle-form').reset();
                 document.getElementById('rent-documents-preview').innerHTML = '';
                 rentalDocuments = [];
                 currentVehicleToRent = null;
                 
+                loadAvailableVehicles();
                 loadMyRentals();
                 
             } catch (error) {
@@ -2258,6 +2262,7 @@
                     document.getElementById('user-avatar').textContent = fullName.charAt(0).toUpperCase();
                     
                     alert('Perfil atualizado!');
+                    location.reload(); // Recarregar para atualizar interface
                 })
                 .catch(error => {
                     console.error('Error updating profile:', error);
@@ -2280,6 +2285,13 @@
             document.getElementById('logout-btn').style.display = 'block';
             document.getElementById('login-btn').style.display = 'none';
             document.getElementById('dashboard-link').style.display = 'block';
+            
+            // Mostrar botão de adicionar veículo apenas para proprietários
+            if (userProfile && userProfile.user_type === 'owner') {
+                document.getElementById('add-car-btn').style.display = 'block';
+            } else {
+                document.getElementById('add-car-btn').style.display = 'none';
+            }
         }
         
         function updateUIForLoggedOutUser() {
@@ -2287,6 +2299,7 @@
             document.getElementById('logout-btn').style.display = 'none';
             document.getElementById('login-btn').style.display = 'block';
             document.getElementById('dashboard-link').style.display = 'none';
+            document.getElementById('add-car-btn').style.display = 'none';
             
             if (!document.getElementById('home-section').classList.contains('active')) {
                 showSection('home-section');
@@ -2406,13 +2419,31 @@
             
             const userType = userProfile?.user_type || 'tenant';
             
+            // Contar veículos do usuário
+            let myVehiclesCount = 0;
+            let myRentalsCount = 0;
+            
+            if (userType === 'owner') {
+                const { data: vehicles } = await supabase
+                    .from('vehicles')
+                    .select('id')
+                    .eq('owner_id', currentUser.id);
+                myVehiclesCount = vehicles ? vehicles.length : 0;
+            } else {
+                const { data: rentals } = await supabase
+                    .from('rentals')
+                    .select('id')
+                    .eq('tenant_id', currentUser.id);
+                myRentalsCount = rentals ? rentals.length : 0;
+            }
+            
             statsContainer.innerHTML = `
                 <div class="stat-card">
                     <div class="stat-icon primary">
                         <i class="fas ${userType === 'owner' ? 'fa-car' : 'fa-file-contract'}"></i>
                     </div>
                     <div class="stat-content">
-                        <div class="stat-number">${userType === 'owner' ? '0' : '0'}</div>
+                        <div class="stat-number">${userType === 'owner' ? myVehiclesCount : myRentalsCount}</div>
                         <div class="stat-label">${userType === 'owner' ? 'Meus Veículos' : 'Minhas Locações'}</div>
                     </div>
                 </div>
@@ -2459,7 +2490,7 @@
                     
                 if (error) throw error;
                 
-                renderVehicles(vehicles || [], container);
+                renderVehicles(vehicles || [], container, true);
                 
             } catch (error) {
                 console.error('Error loading featured vehicles:', error);
@@ -2479,7 +2510,7 @@
                     
                 if (error) throw error;
                 
-                renderVehicles(vehicles || [], container);
+                renderVehicles(vehicles || [], container, false);
                 
             } catch (error) {
                 console.error('Error loading available vehicles:', error);
@@ -2487,7 +2518,7 @@
             }
         }
         
-        function renderVehicles(vehicles, container) {
+        function renderVehicles(vehicles, container, isFeatured = false) {
             let html = '';
             
             if (vehicles.length === 0) {
@@ -2521,28 +2552,22 @@
                                 </div>
                                 <div class="card-price">R$ ${vehicle.price ? vehicle.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '0,00'}<small>/mês</small></div>
                                 <p class="card-description">${vehicle.description ? (vehicle.description.substring(0, 100) + '...') : 'Veículo em ótimo estado.'}</p>
-                                ${currentUser && userProfile && userProfile.user_type === 'tenant' ? `
-                                    <div class="card-actions">
-                                        <button class="btn btn-primary" onclick="openRentModal('${vehicle.id}')">
-                                            <i class="fas fa-calendar-check"></i> Alugar
-                                        </button>
+                                <div class="card-actions">
+                                    ${currentUser ? `
+                                        ${userProfile && userProfile.user_type === 'tenant' ? `
+                                            <button class="btn btn-primary" onclick="openRentModal('${vehicle.id}')">
+                                                <i class="fas fa-calendar-check"></i> Alugar
+                                            </button>
+                                        ` : ''}
                                         <button class="btn btn-outline" onclick="viewVehicleDetails('${vehicle.id}')">
                                             <i class="fas fa-info-circle"></i> Detalhes
                                         </button>
-                                    </div>
-                                ` : `
-                                    <div class="card-actions">
-                                        ${currentUser ? `
-                                            <button class="btn btn-outline" onclick="viewVehicleDetails('${vehicle.id}')">
-                                                <i class="fas fa-info-circle"></i> Detalhes
-                                            </button>
-                                        ` : `
-                                            <button class="btn btn-outline" onclick="showAuthModal()">
-                                                <i class="fas fa-sign-in-alt"></i> Faça login para alugar
-                                            </button>
-                                        `}
-                                    </div>
-                                `}
+                                    ` : `
+                                        <button class="btn btn-primary" onclick="showAuthModal()">
+                                            <i class="fas fa-sign-in-alt"></i> Faça login para alugar
+                                        </button>
+                                    `}
+                                </div>
                             </div>
                         </div>
                     `;
@@ -2582,6 +2607,7 @@
                 return;
             }
             
+            // Verificar se usuário é proprietário
             if (userProfile.user_type !== 'owner') {
                 container.innerHTML = `
                     <div style="text-align: center; padding: 40px; color: var(--gray); max-width: 600px; margin: 0 auto;">
@@ -2656,6 +2682,9 @@
                                 <div class="card-actions">
                                     <button class="btn btn-outline btn-sm" onclick="viewVehicleDetails('${vehicle.id}', true)">
                                         <i class="fas fa-eye"></i> Visualizar
+                                    </button>
+                                    <button class="btn btn-primary btn-sm" onclick="editVehicle('${vehicle.id}')">
+                                        <i class="fas fa-edit"></i> Editar
                                     </button>
                                 </div>
                             </div>
@@ -2895,6 +2924,10 @@
             alert(`Detalhes do veículo ${vehicleId} (em desenvolvimento)`);
         }
         
+        function editVehicle(vehicleId) {
+            alert(`Editar veículo ${vehicleId} (em desenvolvimento)`);
+        }
+        
         function viewRentalDetails(rentalId) {
             alert(`Detalhes da locação ${rentalId} (em desenvolvimento)`);
         }
@@ -2916,6 +2949,8 @@
         window.removeVehicleImage = removeVehicleImage;
         window.approveRental = approveRental;
         window.rejectRental = rejectRental;
+        window.switchTab = switchTab;
+        window.editVehicle = editVehicle;
         
     </script>
 </body>
