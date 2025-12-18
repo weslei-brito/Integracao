@@ -2138,7 +2138,7 @@
                     // Register
                     const fullName = document.getElementById('register-name').value.trim();
                     const phone = document.getElementById('register-phone').value.trim();
-                    const userType = document.querySelector('input[name="register-user-type"]:checked').value;
+                    const userTypeRadio = document.querySelector('input[name="register-user-type"]:checked');
                     
                     if (!fullName || !phone) {
                         alert('Preencha todos os campos.');
@@ -2149,6 +2149,16 @@
                         alert('Telefone inválido.');
                         return;
                     }
+                    
+                    // CORREÇÃO: Verificar se o radio button foi selecionado
+                    if (!userTypeRadio) {
+                        alert('Selecione o tipo de usuário.');
+                        return;
+                    }
+                    
+                    const userType = userTypeRadio.value; // Agora pega o valor corretamente
+                    
+                    console.log('User type selected for registration:', userType);
                     
                     // Verificar se email existe
                     const { data: existingUser } = await supabase
@@ -2170,12 +2180,13 @@
                         email: email,
                         phone: phone,
                         password_hash: btoa(password),
-                        user_type: userType,
+                        user_type: userType, // CORREÇÃO: Usa o valor do radio button
                         created_at: new Date().toISOString(),
                         updated_at: new Date().toISOString()
                     };
                     
-                    console.log('Creating new user:', userData);
+                    console.log('Creating new user with type:', userType);
+                    console.log('User data:', userData);
                     
                     const { data, error } = await supabase
                         .from('profiles2')
@@ -2199,9 +2210,9 @@
                     currentUser = user;
                     userProfile = data;
                     
-                    console.log('User registered successfully:', data);
+                    console.log('User registered successfully. Type:', data.user_type);
                     
-                    alert('Cadastro realizado!');
+                    alert('Cadastro realizado como ' + (data.user_type === 'owner' ? 'Proprietário' : 'Locatário') + '!');
                     document.getElementById('auth-modal').style.display = 'none';
                     document.getElementById('auth-form').reset();
                     
@@ -2231,7 +2242,7 @@
                         return;
                     }
                     
-                    console.log('User found in database:', data);
+                    console.log('User found in database, type:', data.user_type);
                     
                     // Verificar senha (simple base64 encoding for demo)
                     const encodedPassword = btoa(password);
@@ -2314,8 +2325,18 @@
                 const address = document.getElementById('profile-address').value;
                 const city = document.getElementById('profile-city').value;
                 const state = document.getElementById('profile-state').value;
-                const userType = document.querySelector('input[name="user-type"]:checked').value;
+                
+                // CORREÇÃO: Verificar se algum radio button está selecionado
+                const userTypeRadio = document.querySelector('input[name="user-type"]:checked');
+                if (!userTypeRadio) {
+                    alert('Selecione o tipo de usuário.');
+                    return;
+                }
+                
+                const userType = userTypeRadio.value;
                 const newPassword = document.getElementById('profile-password').value;
+                
+                console.log('Updating profile with user type:', userType);
                 
                 const updateData = {
                     full_name: fullName,
@@ -2325,7 +2346,7 @@
                     address: address,
                     city: city,
                     state: state,
-                    user_type: userType,
+                    user_type: userType, // CORREÇÃO: Usa o valor do radio button
                     updated_at: new Date().toISOString()
                 };
                 
@@ -2353,10 +2374,15 @@
                 document.getElementById('user-name').textContent = fullName;
                 document.getElementById('user-avatar').textContent = fullName.charAt(0).toUpperCase();
                 
-                alert('Perfil atualizado! A interface será atualizada.');
+                alert('Perfil atualizado! Seu tipo de usuário agora é: ' + (userType === 'owner' ? 'Proprietário' : 'Locatário'));
                 
                 // Recarregar interface
                 updateUIForLoggedInUser();
+                
+                // Se estiver na aba de "Meus Veículos", recarregar
+                if (document.getElementById('my-cars-tab').classList.contains('active')) {
+                    loadMyCars();
+                }
                 
             } catch (error) {
                 console.error('Error updating profile:', error);
@@ -2379,6 +2405,7 @@
             console.log('Updating UI for logged in user');
             console.log('Current user:', currentUser);
             console.log('User profile:', userProfile);
+            console.log('User type:', userProfile ? userProfile.user_type : 'N/A');
             
             document.getElementById('user-info').style.display = 'flex';
             document.getElementById('logout-btn').style.display = 'block';
@@ -2394,12 +2421,12 @@
                 userProfile.full_name.charAt(0).toUpperCase() : 
                 currentUser.email.charAt(0).toUpperCase();
             
-            // Mostrar botão de adicionar veículo apenas para proprietários
+            // CORREÇÃO: Verificar tipo de usuário corretamente
             if (userProfile && userProfile.user_type === 'owner') {
                 console.log('User is owner, showing add car button');
                 document.getElementById('add-car-btn').style.display = 'block';
             } else {
-                console.log('User is not owner, hiding add car button');
+                console.log('User is NOT owner (type:', userProfile ? userProfile.user_type : 'unknown', '), hiding add car button');
                 document.getElementById('add-car-btn').style.display = 'none';
             }
             
@@ -2538,19 +2565,23 @@
             let myRentalsCount = 0;
             
             if (userType === 'owner') {
-                const { data: vehicles } = await supabase
+                const { data: vehicles, error } = await supabase
                     .from('vehicles')
                     .select('id')
-                    .eq('owner_id', currentUser.id)
-                    .maybeSingle();
-                myVehiclesCount = vehicles ? 1 : 0; // Corrigido para verificar se há dados
+                    .eq('owner_id', currentUser.id);
+                    
+                if (!error && vehicles) {
+                    myVehiclesCount = vehicles.length;
+                }
             } else {
-                const { data: rentals } = await supabase
+                const { data: rentals, error } = await supabase
                     .from('rentals')
                     .select('id')
-                    .eq('tenant_id', currentUser.id)
-                    .maybeSingle();
-                myRentalsCount = rentals ? 1 : 0; // Corrigido para verificar se há dados
+                    .eq('tenant_id', currentUser.id);
+                    
+                if (!error && rentals) {
+                    myRentalsCount = rentals.length;
+                }
             }
             
             statsContainer.innerHTML = `
@@ -2738,12 +2769,12 @@
             }
             
             // Verificar se usuário é proprietário
-            if (userProfile.user_type !== 'owner') {
+            if (!userProfile || userProfile.user_type !== 'owner') {
                 container.innerHTML = `
                     <div style="text-align: center; padding: 40px; color: var(--gray); max-width: 600px; margin: 0 auto;">
                         <i class="fas fa-car" style="font-size: 48px; margin-bottom: 20px; color: var(--gray);"></i>
                         <h3 style="margin-bottom: 15px;">Você precisa ser proprietário</h3>
-                        <p style="margin-bottom: 25px;">Altere seu tipo de usuário para "Proprietário" no perfil.</p>
+                        <p style="margin-bottom: 25px;">Para cadastrar veículos, altere seu tipo de usuário para "Proprietário" na aba de Perfil.</p>
                         <button class="btn btn-primary" onclick="switchTab('profile')">
                             <i class="fas fa-user-cog"></i> Ir para Configurações
                         </button>
@@ -3086,6 +3117,25 @@
             console.log('========================');
         }
         
+        function debugRadioButtons() {
+            console.log('=== DEBUG RADIO BUTTONS ===');
+            
+            // Verificar radio buttons do cadastro
+            const registerRadios = document.querySelectorAll('input[name="register-user-type"]');
+            registerRadios.forEach(radio => {
+                console.log(`Register radio ${radio.value}: checked=${radio.checked}`);
+            });
+            
+            // Verificar radio buttons do perfil
+            const profileRadios = document.querySelectorAll('input[name="user-type"]');
+            profileRadios.forEach(radio => {
+                console.log(`Profile radio ${radio.value}: checked=${radio.checked}`);
+            });
+            
+            console.log('Current user type:', userProfile ? userProfile.user_type : 'N/A');
+            console.log('===========================');
+        }
+        
         // Global functions
         window.showAuthModal = showAuthModal;
         window.openRentModal = openRentModal;
@@ -3096,6 +3146,7 @@
         window.switchTab = switchTab;
         window.editVehicle = editVehicle;
         window.debugUserState = debugUserState;
+        window.debugRadioButtons = debugRadioButtons;
         
     </script>
 </body>
