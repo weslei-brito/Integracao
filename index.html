@@ -191,7 +191,7 @@
                             </div>
                             <div class="mb-3">
                                 <label for="senha" class="form-label">Senha *</label>
-                                <input type="password" class="form-control" id="senha" placeholder="Ex: senha1213" required>
+                                <input type="password" class="form-control" id="senha" placeholder="Ex: 32322323" required>
                             </div>
                             
                             <h6 class="mt-4 mb-3">Filtros Básicos</h6>
@@ -272,7 +272,36 @@
                                     <input type="text" class="form-control" id="cm04" placeholder="Valor do campo 04">
                                 </div>
                             </div>
-                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="cm05" class="form-label">CM05</label>
+                                    <input type="text" class="form-control" id="cm05" placeholder="Valor do campo 05">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="cm06" class="form-label">CM06</label>
+                                    <input type="text" class="form-control" id="cm06" placeholder="Valor do campo 06">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="cm07" class="form-label">CM07</label>
+                                    <input type="text" class="form-control" id="cm07" placeholder="Valor do campo 07">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="cm08" class="form-label">CM08</label>
+                                    <input type="text" class="form-control" id="cm08" placeholder="Valor do campo 08">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="cm09" class="form-label">CM09</label>
+                                    <input type="text" class="form-control" id="cm09" placeholder="Valor do campo 09">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="cm10" class="form-label">CM10</label>
+                                    <input type="text" class="form-control" id="cm10" placeholder="Valor do campo 10">
+                                </div>
+                            </div>
                             <h6 class="mt-4 mb-3">Configuração de Paginação</h6>
                             <div class="row">
                                 <div class="col-md-6 mb-3">
@@ -526,6 +555,12 @@
                 cm02: document.getElementById('cm02').value || null,
                 cm03: document.getElementById('cm03').value || null,
                 cm04: document.getElementById('cm04').value || null,
+                cm05: document.getElementById('cm05').value || null,
+                cm06: document.getElementById('cm06').value || null,
+                cm07: document.getElementById('cm07').value || null,
+                cm08: document.getElementById('cm08').value || null,
+                cm09: document.getElementById('cm09').value || null,
+                cm10: document.getElementById('cm10').value || null,
                 pagina: paginaAtual,
                 tamanhoPagina: tamanhoPagina
             };
@@ -796,6 +831,24 @@
                     </div>
                     <div class="col-md-3">
                         <p><strong>CM04:</strong> ${registro.cm04 || '-'}</p>
+                    </div>
+                     <div class="col-md-3">
+                        <p><strong>CM05:</strong> ${registro.cm05 || '-'}</p>
+                    </div>
+                     <div class="col-md-3">
+                        <p><strong>CM06:</strong> ${registro.cm06 || '-'}</p>
+                    </div>
+                     <div class="col-md-3">
+                        <p><strong>CM07:</strong> ${registro.cm07 || '-'}</p>
+                    </div>
+                     <div class="col-md-3">
+                        <p><strong>CM08:</strong> ${registro.cm08 || '-'}</p>
+                    </div>
+                     <div class="col-md-3">
+                        <p><strong>CM09:</strong> ${registro.cm09 || '-'}</p>
+                    </div>
+                    <div class="col-md-3">
+                        <p><strong>CM10:</strong> ${registro.cm10 || '-'}</p>
                     </div>
                 </div>
                 
